@@ -11,388 +11,129 @@
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <script src="https://unpkg.com/leaflet.fullscreen/Control.FullScreen.js"></script>
   <link rel="stylesheet" href="https://unpkg.com/leaflet.fullscreen/Control.FullScreen.css" />
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <style>
     body { background-color: #fff; font-family: 'Segoe UI', sans-serif; padding: 15px; transition: background-color 0.3s, color 0.3s; }
     body.dark-mode { background-color: #1c1c1c; color: #fff; }
-    h1 { color: #2e7d32; font-weight: 700; margin-bottom: 20px; text-align: center; }
-    body.dark-mode h1 { color: #a5d6a7; }
-    .card { border-radius: 15px; box-shadow: 0 4px 10px rgba(0,0,0,0.08); transition: all 0.2s; background-color: #fff; color: #000; }
-    body.dark-mode .card { background-color: #2b2b2b; color: #fff; }
-    .card:hover { transform: translateY(-2px); box-shadow: 0 6px 12px rgba(0,0,0,0.15); }
-    .status { font-weight: 600; font-size: 1rem; margin-bottom: 0.5rem; }
-    .status-carregado { color: #198754; }
-    .status-descarregando { color: #ff9800; }
-    .status-parado { color: #dc3545; }
+    .logo-container img { width: 160px; border-radius: 10px; }
     #map { height: 450px; border-radius: 15px; margin-top: 20px; }
     .footer { text-align: center; color: #6c757d; margin-top: 20px; font-size: 0.9rem; }
-    .logo-container { text-align: center; margin-bottom: 10px; }
-    .logo-container img { width: 160px; border-radius: 10px; }
-    .map-legend { position: absolute; bottom: 20px; right: 20px; background: rgba(255,255,255,0.95); padding: 8px; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.2); font-size: 0.9rem; }
-    .map-legend div { display: flex; align-items: center; margin-bottom: 4px; }
-    .map-legend span { display: inline-block; width: 16px; height: 16px; margin-right: 6px; border-radius: 3px; }
-    .summary-box { background: #e8f5e9; border-radius: 12px; padding: 10px 15px; margin-bottom: 10px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
-    body.dark-mode .summary-box { background: #2e2e2e; color: #fff; }
-    .filter-bar select { width: 24%; font-size: 0.9rem; }
-    .btn-darkmode { border-radius: 30px; padding: 6px 20px; }
-    .truck-label { color: white; font-weight: 600; text-shadow: 0 0 4px rgba(0,0,0,0.8); font-size: 12px; }
   </style>
 </head>
 <body>
-  <div class="container position-relative">
-    <div class="logo-container">
+  <div class="container">
+    <div class="logo-container text-center mb-3">
       <img src="logo.png" alt="Logo Souza">
     </div>
-
     <div class="text-center mb-3 d-flex justify-content-center gap-2">
       <button id="refreshBtn" class="btn btn-success btn-sm">🔄 Atualizar</button>
-      <button id="darkModeBtn" class="btn btn-outline-dark btn-sm btn-darkmode">🌙 Modo Escuro</button>
+      <button id="darkModeBtn" class="btn btn-outline-dark btn-sm">🌙 Modo Escuro</button>
       <button id="produtividadeBtn" class="btn btn-outline-success btn-sm">📊 Produtividade</button>
     </div>
-
-    <div class="filter-bar d-flex justify-content-between mb-2">
-      <select id="filtroStatus" class="form-select form-select-sm"><option value="">Todos os Status</option></select>
-      <select id="filtroProduto" class="form-select form-select-sm"><option value="">Todos os Produtos</option></select>
-      <select id="filtroCidade" class="form-select form-select-sm"><option value="">Todas as Cidades</option></select>
-      <select id="filtroDestino" class="form-select form-select-sm"><option value="">Todos os Destinos</option></select>
-    </div>
-
-    <div id="resumoContainer" class="summary-box">
-      <strong>Resumo:</strong>
-      <div id="resumoTexto" class="mt-1 text-secondary small">Carregando dados...</div>
-    </div>
-
-    <div id="map" class="mb-2"></div>
-    <div class="map-legend">
-      <div><span style="background:green;"></span>Carregado</div>
-      <div><span style="background:orange;"></span>Descarregando</div>
-      <div><span style="background:red;"></span>Vazio</div>
-    </div>
-
+    <div id="map"></div>
     <div id="frotaContainer" class="row g-3 mt-2"></div>
-
     <div class="footer">© 2025 Controle de Frota | Souza Transportes</div>
   </div>
 
-  <!-- Modal Produtividade -->
-  <div class="modal fade" id="produtividadeModal" tabindex="-1" aria-labelledby="produtividadeLabel" aria-hidden="true">
-    <div class="modal-dialog modal-xl modal-dialog-scrollable">
+  <!-- Modal PRODUTIVIDADE -->
+  <div class="modal fade" id="produtividadeModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-fullscreen">
       <div class="modal-content">
-        <div class="modal-header bg-success text-white">
-          <h5 class="modal-title" id="produtividadeLabel">📊 Painel de Produtividade</h5>
-          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
-        </div>
-        <div class="modal-body">
-          <div class="text-center mb-3">
-            <button id="atualizarProdutividade" class="btn btn-sm btn-success">🔄 Atualizar Dados</button>
-          </div>
-          <div id="tabelasProdutividade" class="table-responsive text-center">
-            <p class="text-secondary">Carregando dados...</p>
-          </div>
+        <div class="modal-body" id="tabelasProdutividade">
+          <p class="text-secondary">Carregando...</p>
         </div>
       </div>
     </div>
   </div>
 
-  <script>
-    const scriptURL = "https://script.google.com/macros/s/AKfycbwPF1kHgpn40vN0T-PXU1RquJknygcJ_EZySC1zPLZEAY1AZk4vLli1sZURAufTWOAB/exec";
-    let map, markers = [], dadosFrota = [];
+<script>
+const sheetCSV = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTPPayk88qhh1VviHffMZKaNmicNnoiusxtMRc-pi7bzk0YZzoWnMSysT5fs8IVbqnLSAHir-UuNZpc/pub?gid=165883713&single=true&output=csv";
 
-    // === Funções Frota (originais) ===
-    function getTruckIcon(color) {
-      return L.divIcon({ className: "truck-marker", html: `<div style="font-size:22px;color:${color};">🚛</div>`, iconSize: [24, 24], iconAnchor: [12, 12] });
-    }
-    function aplicarDeslocamento(lat, lon) {
-      const deslocamento = 0.02 * (Math.random() - 0.5);
-      return [lat + deslocamento, lon + deslocamento];
-    }
-    async function geocodeCidade(cidade) {
-      try {
-        const resp = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(cidade + ', Brasil')}`);
-        const data = await resp.json();
-        if (data && data.length > 0) return [parseFloat(data[0].lat), parseFloat(data[0].lon)];
-      } catch (e) { console.warn('Erro ao geocodificar', cidade); }
-      return null;
-    }
-    async function atualizarMapa(dados) {
-      if (!map) {
-        map = L.map('map', { fullscreenControl: true }).setView([-15.78, -47.93], 5);
-        const hybrid = L.tileLayer('https://{s}.google.com/vt/lyrs=y,m&x={x}&y={y}&z={z}', { maxZoom: 20, subdomains: ['mt0','mt1','mt2','mt3'], attribution: 'Map data © Google Maps' }).addTo(map);
-        const osm = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '© OpenStreetMap' });
-        L.control.layers({ "🛰️ Híbrido": hybrid, "🗺️ OpenStreetMap": osm }).addTo(map);
-      }
-      markers.forEach(m => map.removeLayer(m));
-      markers = [];
-      const group = [];
-      for (const v of dados) {
-        const cidade = v["Posição"] || "";
-        const frota = v.Frota || "";
-        const status = (v.Status || "").toLowerCase();
-        const color = status.includes("carregado") ? "green" : status.includes("descarregando") ? "orange" : "red";
-        let pos = null;
-        const lat = parseFloat(v.Latitude);
-        const lon = parseFloat(v.Longitude);
-        if (!isNaN(lat) && !isNaN(lon)) pos = aplicarDeslocamento(lat, lon);
-        else {
-          const latlng = await geocodeCidade(cidade);
-          if (latlng) pos = aplicarDeslocamento(latlng[0], latlng[1]);
-        }
-        if (pos) {
-          const icon = getTruckIcon(color);
-          const marker = L.marker(pos, { icon }).addTo(map);
-          marker.bindPopup(`<b>${frota}</b><br>${v.Status}<br>${v.Produto}<br>${cidade}<br><b>Destino:</b> ${v.Destino || '-'}`);
-          const label = L.divIcon({ className: 'truck-label', html: frota, iconSize: [100,20], iconAnchor: [50,-15] });
-          L.marker(pos, { icon: label }).addTo(map);
-          markers.push(marker); group.push(marker);
-        }
-      }
-      if (group.length) {
-        const groupLayer = L.featureGroup(group);
-        map.fitBounds(groupLayer.getBounds(), { padding: [30, 30] });
-      }
-    }
-    function renderizarFrota(dados) {
-      const container = document.getElementById("frotaContainer");
-      const resumoEl = document.getElementById("resumoTexto");
-      container.innerHTML = "";
-      const total = dados.length;
-      const carregado = dados.filter(v => v.Status.toLowerCase().includes("carregado")).length;
-      const descarregando = dados.filter(v => v.Status.toLowerCase().includes("descarregando")).length;
-      const parado = total - carregado - descarregando;
-      resumoEl.innerHTML = `Total: <b>${total}</b> | Carregados: <span class="text-success"><b>${carregado}</b></span> | Descarregando: <span class="text-warning"><b>${descarregando}</b></span> | Vazios: <span class="text-danger"><b>${parado}</b></span>`;
-      dados.forEach(v => {
-        const status = (v.Status || '').toLowerCase();
-        const statusClass = status.includes('carregado') ? 'status-carregado' : status.includes('descarregando') ? 'status-descarregando' : 'status-parado';
-        const card = `<div class="col-6 col-md-3"><div class="card p-2"><h6 class="card-title mb-1">${v.Frota || '-'}</h6><p class="status ${statusClass}">${v.Status || '-'}</p><p class="mb-0"><strong>Produto:</strong> ${v.Produto || '-'}</p><p class="mb-0"><strong>Posição:</strong> ${v["Posição"] || '-'}</p><p class="mb-0"><strong>Destino:</strong> ${v.Destino || '-'}</p><button class="btn btn-sm btn-outline-success mt-1" onclick="destacarCaminhao('${v.Frota}')">📍 Mapa</button></div></div>`;
-        container.innerHTML += card;
-      });
-      atualizarMapa(dados);
-    }
-    function preencherFiltros(dados) {
-      const statusSet = new Set(), produtoSet = new Set(), cidadeSet = new Set(), destinoSet = new Set();
-      dados.forEach(v => { statusSet.add(v.Status); produtoSet.add(v.Produto); cidadeSet.add(v["Posição"]); destinoSet.add(v.Destino); });
-      const preencher = (id, set) => { const sel = document.getElementById(id); set.forEach(v => { if (v) sel.innerHTML += `<option value="${v}">${v}</option>`; }); };
-      preencher("filtroStatus", statusSet);
-      preencher("filtroProduto", produtoSet);
-      preencher("filtroCidade", cidadeSet);
-      preencher("filtroDestino", destinoSet);
-    }
-    async function buscarDados() {
-      const container = document.getElementById("frotaContainer");
-      container.innerHTML = "<p class='text-center text-secondary'>🔄 Carregando...</p>";
-      try {
-        const response = await fetch(scriptURL + '?t=' + Date.now());
-        const data = await response.json();
-        dadosFrota = data;
-        preencherFiltros(data);
-        renderizarFrota(data);
-      } catch (error) {
-        container.innerHTML = "<p class='text-center text-danger'>Erro ao carregar.</p>";
-      }
-    }
-
-    // === PRODUTIVIDADE (via CSV público) ===
-    async function carregarProdutividade() {
-  const area = document.getElementById("tabelasProdutividade");
-  area.innerHTML = "<p class='text-secondary'>Carregando produtividade...</p>";
-
-  const sheetCSV = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTPPayk88qhh1VviHffMZKaNmicNnoiusxtMRc-pi7bzk0YZzoWnMSysT5fs8IVbqnLSAHir-UuNZpc/pub?gid=165883713&single=true&output=csv";
-
-  // --- Parse robusto para CSV ---
-  function parseCSV(text) {
-    const rows = [];
-    let cur = "";
-    let row = [];
-    let inQuotes = false;
-    for (let i = 0; i < text.length; i++) {
-      const ch = text[i];
-      const next = text[i + 1];
-      if (ch === '"') {
-        if (inQuotes && next === '"') { cur += '"'; i++; }
-        else { inQuotes = !inQuotes; }
-      } else if (ch === "," && !inQuotes) {
-        row.push(cur);
-        cur = "";
-      } else if ((ch === "\n" || ch === "\r") && !inQuotes) {
-        if (ch === "\r" && text[i + 1] === "\n") i++;
-        row.push(cur);
-        rows.push(row);
-        cur = "";
-        row = [];
-      } else cur += ch;
-    }
-    if (cur || row.length) { row.push(cur); rows.push(row); }
-    return rows.map(r => r.map(c => {
-      let v = c.trim();
-      if (v.startsWith('"') && v.endsWith('"')) v = v.slice(1, -1);
-      return v.replace(/""/g, '"');
-    }));
+function parseCSV(text){
+  const rows=[],row=[],arr=[];let cur="",inQ=false,tmp=[];
+  for(let i=0;i<text.length;i++){
+    const c=text[i],n=text[i+1];
+    if(c=='"'){if(inQ&&n=='"'){cur+='"';i++;}else inQ=!inQ;}
+    else if(c==","&&!inQ){tmp.push(cur);cur="";}
+    else if((c=="\n"||c=="\r")&&!inQ){if(c=="\r"&&text[i+1]=="\n")i++;tmp.push(cur);rows.push(tmp);cur="";tmp=[];}
+    else cur+=c;
   }
-
-  function parseNumber(str) {
-    if (!str) return 0;
-    return Number(str.replace(/[R$\s"]/g, "").replace(/\./g, "").replace(",", ".").trim()) || 0;
-  }
-
-  try {
-    const response = await fetch(sheetCSV + "&t=" + Date.now(), { cache: "no-store" });
-    if (!response.ok) throw new Error("Erro HTTP " + response.status);
-    const text = await response.text();
-
-    const linhas = parseCSV(text);
-    if (!linhas || linhas.length < 2) {
-      area.innerHTML = "<p class='text-warning'>Sem dados disponíveis.</p>";
-      return;
-    }
-
-    const cabecalhos = linhas.shift();
-    const motoristas = new Set();
-    const dados = [];
-
-    linhas.forEach(l => {
-      if (!l.some(x => x && x.trim() !== "")) return;
-      const linha = {};
-      cabecalhos.forEach((h, i) => linha[h] = l[i] || "");
-      if (linha["MOTORISTA"]) motoristas.add(linha["MOTORISTA"]);
-      dados.push(linha);
-    });
-
-    // === Layout do painel ===
-    let painelHTML = `
-      <div class="d-flex justify-content-between align-items-center mb-3">
-        <button id="voltarTelaInicial" class="btn btn-outline-secondary btn-sm">⬅️ Voltar</button>
-        <h5 class="text-success fw-bold m-0">Painel de Produtividade</h5>
-        <button id="atualizarProdutividade" class="btn btn-success btn-sm">🔄 Atualizar</button>
-      </div>
-      <div class="text-start mb-3">
-        <label for="filtroMotorista" class="form-label fw-semibold small text-success">Filtrar por Motorista:</label>
-        <select id="filtroMotorista" class="form-select form-select-sm" style="max-width:300px;display:inline-block;">
-          <option value="">Todos</option>
-          ${Array.from(motoristas).map(m => `<option value="${m}">${m}</option>`).join("")}
-        </select>
-      </div>
-      <canvas id="graficoProdutividade" height="120" class="mb-4"></canvas>
-      <div id="tabelaProdutividade"></div>
-    `;
-    area.innerHTML = painelHTML;
-
-    // === Função para renderizar tabela + gráfico ===
-    async function renderTabela(filtro = "") {
-      const filtrados = filtro ? dados.filter(d => d["MOTORISTA"] === filtro) : dados;
-
-      let html = "<div class='table-responsive'><table class='table table-striped table-bordered table-sm align-middle'>";
-      html += "<thead class='table-success'><tr>";
-      cabecalhos.forEach(c => html += `<th>${c}</th>`);
-      html += "</tr></thead><tbody>";
-
-      let totalFrete = 0, totalComissao = 0;
-      filtrados.forEach(l => {
-        html += "<tr>";
-        cabecalhos.forEach(c => {
-          let valor = l[c] || "";
-          if (c.toLowerCase().includes("frete")) totalFrete += parseNumber(valor);
-          if (c.toLowerCase().includes("comissão")) totalComissao += parseNumber(valor);
-          html += `<td>${valor}</td>`;
-        });
-        html += "</tr>";
-      });
-
-      html += `</tbody><tfoot class='table-light'>
-        <tr>
-          <th colspan="${cabecalhos.length - 2}" class="text-end">Totais:</th>
-          <th>R$ ${totalFrete.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}</th>
-          <th>R$ ${totalComissao.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}</th>
-        </tr>
-      </tfoot></table></div>`;
-      document.getElementById("tabelaProdutividade").innerHTML = html;
-
-      // === GRÁFICO DUPLO ===
-      const ctx = document.getElementById("graficoProdutividade");
-      const dadosGrafico = {};
-      filtrados.forEach(l => {
-        const motorista = l["MOTORISTA"] || "Sem nome";
-        const frete = parseNumber(l["FATURAMENTO FRETE"]) || 0;
-        const comissao = parseNumber(l["COMISSÃO (12%)"]) || 0;
-        if (!dadosGrafico[motorista]) dadosGrafico[motorista] = { frete: 0, comissao: 0 };
-        dadosGrafico[motorista].frete += frete;
-        dadosGrafico[motorista].comissao += comissao;
-      });
-
-      const labels = Object.keys(dadosGrafico);
-      const valoresFrete = labels.map(k => dadosGrafico[k].frete);
-      const valoresComissao = labels.map(k => dadosGrafico[k].comissao);
-
-      if (typeof Chart === "undefined") {
-        const script = document.createElement("script");
-        script.src = "https://cdn.jsdelivr.net/npm/chart.js";
-        document.head.appendChild(script);
-        script.onload = () => gerarGrafico(ctx, labels, valoresFrete, valoresComissao);
-      } else {
-        gerarGrafico(ctx, labels, valoresFrete, valoresComissao);
-      }
-
-      // Atualiza filtro
-      document.getElementById("filtroMotorista").addEventListener("change", e => renderTabela(e.target.value));
-      document.getElementById("atualizarProdutividade").addEventListener("click", carregarProdutividade);
-      document.getElementById("voltarTelaInicial").addEventListener("click", () => {
-        const modal = bootstrap.Modal.getInstance(document.getElementById("produtividadeModal"));
-        modal.hide();
-      });
-    }
-
-    function gerarGrafico(ctx, labels, valoresFrete, valoresComissao) {
-      if (window.produtividadeChart) window.produtividadeChart.destroy();
-      window.produtividadeChart = new Chart(ctx, {
-        type: "bar",
-        data: {
-          labels: labels,
-          datasets: [
-            {
-              label: "Faturamento Frete (R$)",
-              data: valoresFrete,
-              backgroundColor: "rgba(25, 135, 84, 0.7)",
-              borderColor: "#198754",
-              borderWidth: 1
-            },
-            {
-              label: "Comissão (R$)",
-              data: valoresComissao,
-              backgroundColor: "rgba(255, 193, 7, 0.7)",
-              borderColor: "#ffc107",
-              borderWidth: 1
-            }
-          ]
-        },
-        options: {
-          responsive: true,
-          plugins: {
-            legend: { display: true, position: "top" },
-            title: { display: true, text: "Frete x Comissão por Motorista", font: { size: 16 } }
-          },
-          scales: {
-            x: { ticks: { color: "#333" } },
-            y: { beginAtZero: true, ticks: { color: "#333" } }
-          }
-        }
-      });
-    }
-
-    renderTabela();
-  } catch (err) {
-    console.error(err);
-    area.innerHTML = `<p class='text-danger'>Erro ao carregar relatório: ${err.message}</p>`;
-  }
-
-  // === Força o modal em tela cheia ===
-  const modalEl = document.getElementById("produtividadeModal").querySelector(".modal-dialog");
-  modalEl.classList.add("modal-fullscreen");
+  if(cur||tmp.length){tmp.push(cur);rows.push(tmp);}
+  return rows.map(rr=>rr.map(cc=>{let v=cc.trim();if(v.startsWith('"')&&v.endsWith('"'))v=v.slice(1,-1);return v.replace(/""/g,'"');}));
 }
 
-    // === Eventos ===
-    document.getElementById('refreshBtn').addEventListener('click', buscarDados);
-    document.getElementById('darkModeBtn').addEventListener('click', () => document.body.classList.toggle('dark-mode'));
-    document.getElementById("produtividadeBtn").addEventListener("click", abrirProdutividade);
-    document.getElementById("atualizarProdutividade").addEventListener("click", carregarProdutividade);
-    window.onload = () => { buscarDados(); };
-  </script>
+function parseNumber(s){if(!s)return 0;return Number(s.replace(/[R$\s"]/g,"").replace(/\./g,"").replace(",",".").trim())||0;}
+
+async function carregarProdutividade(){
+  const area=document.getElementById("tabelasProdutividade");
+  area.innerHTML="<p class='text-secondary'>Carregando produtividade...</p>";
+  try{
+    const resp=await fetch(sheetCSV+"&t="+Date.now(),{cache:"no-store"});
+    const txt=await resp.text();
+    const linhas=parseCSV(txt);
+    const cab=linhas.shift();
+    const mot=new Set();
+    const dados=[];
+    linhas.forEach(l=>{if(!l.some(x=>x&&x.trim()!=""))return;const o={};cab.forEach((h,i)=>o[h]=l[i]||"");if(o["MOTORISTA"])mot.add(o["MOTORISTA"]);dados.push(o);});
+
+    area.innerHTML=\`
+    <div class='d-flex justify-content-between align-items-center mb-3'>
+      <button id='voltarTelaInicial' class='btn btn-outline-secondary btn-sm'>⬅️ Voltar</button>
+      <h5 class='text-success fw-bold m-0'>Painel de Produtividade</h5>
+      <button id='atualizarProdutividade' class='btn btn-success btn-sm'>🔄 Atualizar</button>
+    </div>
+    <div class='text-start mb-3'>
+      <label class='form-label fw-semibold small text-success'>Filtrar por Motorista:</label>
+      <select id='filtroMotorista' class='form-select form-select-sm' style='max-width:300px;display:inline-block;'>
+        <option value=''>Todos</option>\${Array.from(mot).map(m=>\`<option value='\${m}'>\${m}</option>\`).join("")}
+      </select>
+    </div>
+    <canvas id='graficoProdutividade' height='120' class='mb-4'></canvas>
+    <div id='tabelaProdutividade'></div>\`;
+
+    async function renderTabela(f=""){
+      const filt=f?dados.filter(d=>d["MOTORISTA"]===f):dados;
+      let html="<div class='table-responsive'><table class='table table-striped table-bordered table-sm'><thead class='table-success'><tr>";
+      cab.forEach(c=>html+=\`<th>\${c}</th>\`);html+="</tr></thead><tbody>";
+      let totF=0,totC=0;
+      filt.forEach(l=>{
+        html+="<tr>";
+        cab.forEach(c=>{
+          let v=l[c]||"";
+          if(c.toLowerCase().includes("frete"))totF+=parseNumber(v);
+          if(c.toLowerCase().includes("comissão"))totC+=parseNumber(v);
+          html+=\`<td>\${v}</td>\`;
+        });
+        html+="</tr>";
+      });
+      html+=\`</tbody><tfoot class='table-light'><tr><th colspan='\${cab.length-2}' class='text-end'>Totais:</th><th>R$ \${totF.toLocaleString("pt-BR",{minimumFractionDigits:2})}</th><th>R$ \${totC.toLocaleString("pt-BR",{minimumFractionDigits:2})}</th></tr></tfoot></table></div>\`;
+      document.getElementById("tabelaProdutividade").innerHTML=html;
+
+      const ctx=document.getElementById("graficoProdutividade");
+      const dadosG={};
+      filt.forEach(l=>{
+        const m=l["MOTORISTA"]||"Sem nome";
+        const f=parseNumber(l["FATURAMENTO FRETE"])||0;
+        const c=parseNumber(l["COMISSÃO (12%)"])||0;
+        if(!dadosG[m])dadosG[m]={f:0,c:0};
+        dadosG[m].f+=f;dadosG[m].c+=c;
+      });
+      const labels=Object.keys(dadosG);
+      const valF=labels.map(k=>dadosG[k].f);
+      const valC=labels.map(k=>dadosG[k].c);
+
+      if(window.produtividadeChart)window.produtividadeChart.destroy();
+      window.produtividadeChart=new Chart(ctx,{type:"bar",data:{labels:labels,datasets:[{label:"Faturamento Frete (R$)",data:valF,backgroundColor:"rgba(25,135,84,0.7)",borderColor:"#198754",borderWidth:1},{label:"Comissão (R$)",data:valC,backgroundColor:"rgba(255,193,7,0.7)",borderColor:"#ffc107",borderWidth:1}]},options:{responsive:true,plugins:{legend:{display:true,position:"top"},title:{display:true,text:"Frete x Comissão por Motorista",font:{size:16}}},scales:{y:{beginAtZero:true}}}});
+
+      document.getElementById("filtroMotorista").addEventListener("change",e=>renderTabela(e.target.value));
+      document.getElementById("voltarTelaInicial").addEventListener("click",()=>{bootstrap.Modal.getInstance(document.getElementById("produtividadeModal")).hide();});
+      document.getElementById("atualizarProdutividade").addEventListener("click",carregarProdutividade);
+    }
+    renderTabela();
+  }catch(e){area.innerHTML="<p class='text-danger'>Erro ao carregar</p>";}
+}
+
+document.getElementById("produtividadeBtn").addEventListener("click",()=>{const modal=new bootstrap.Modal(document.getElementById("produtividadeModal"));modal.show();carregarProdutividade();});
+</script>
 </body>
 </html>
