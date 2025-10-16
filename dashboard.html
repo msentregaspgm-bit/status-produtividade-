@@ -5,65 +5,57 @@
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>Souza Dashboard</title>
 
-  <!-- Bootstrap, Chart.js e plugin datalabels -->
+  <!-- Bootstrap + Chart.js + datalabels + Leaflet -->
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2"></script>
 
   <style>
-    :root {
-      --verde-souza: #2e7d32;
-      --bg: #ffffff;
-      --card-bg: #ffffff;
-      --muted: #6c757d;
+    :root{
+      --verde-souza:#2e7d32;
+      --bg:#ffffff;
+      --card-bg:#ffffff;
+      --muted:#6c757d;
     }
-    body {
-      background: var(--bg);
-      color: #222;
-      font-family: "Segoe UI", Roboto, Arial, sans-serif;
-      padding: 12px;
-      transition: background 0.25s, color 0.25s;
+    body{ background:var(--bg); color:#222; font-family:"Segoe UI",Roboto,Arial,sans-serif; padding:12px; transition:background .25s,color .25s; }
+    body.dark-mode{ background:#111; color:#eee; }
+
+    header{ display:flex; align-items:center; justify-content:space-between; gap:8px; flex-wrap:wrap; margin-bottom:8px; }
+    .logo-left{ width:56px; height:auto; border-radius:6px; }
+    .title-wrap{ text-align:center; flex:1; min-width:180px; }
+    h1{ margin:0; color:var(--verde-souza); font-weight:700; font-size:20px; }
+    .app-legend{ text-align:center; font-size:0.95rem; color:var(--muted); margin-top:4px; }
+
+    .btn-icon{ border-radius:50%; width:40px; height:40px; display:flex; align-items:center; justify-content:center; }
+
+    .topbar{ display:flex; gap:8px; justify-content:center; align-items:center; flex-wrap:wrap; margin:12px 0; }
+    .nav-btn{ width:44px; height:44px; padding:0; border-radius:8px; display:flex; align-items:center; justify-content:center; }
+    .nav-btn.active{ box-shadow: inset 0 3px 6px rgba(0,0,0,0.12); }
+
+    .card-kpi{ border-radius:10px; background:var(--card-bg); box-shadow:0 3px 10px rgba(0,0,0,0.06); padding:12px; }
+    .kpi-label{ font-size:0.85rem; color:var(--muted); }
+    .kpi-value{ font-weight:700; color:var(--verde-souza); font-size:1.3rem; }
+
+    #map{ height:420px; border-radius:12px; margin-bottom:12px; }
+    .truck-label{ color:#fff; font-weight:600; text-shadow:0 0 4px rgba(0,0,0,0.8); font-size:12px; padding:2px 6px; border-radius:4px; background:rgba(0,0,0,0.55); }
+    .chart-card{ padding:12px; border-radius:10px; background:var(--card-bg); box-shadow:0 3px 10px rgba(0,0,0,0.06); }
+
+    canvas{ max-height:300px !important; height:300px !important; }
+    .section{ display:none; }
+    .section.active{ display:block; }
+
+    .footer{ text-align:center; color:var(--muted); margin-top:14px; font-size:0.85rem; }
+
+    @media(max-width:768px){
+      #map{ height:320px; }
+      h1{ font-size:18px; }
+      canvas{ max-height:260px !important; height:260px !important; }
     }
-    body.dark-mode { background:#111; color:#eee; }
 
-    header {
-      display:flex;
-      align-items:center;
-      justify-content:space-between;
-      gap:8px;
-      flex-wrap:wrap;
-      margin-bottom:8px;
-    }
-    .logo-left { width:60px; border-radius:8px; }
-    .title-wrap { text-align:center; flex:1; min-width:180px; }
-    h1 { margin:0; color:var(--verde-souza); font-weight:700; font-size:22px; }
-    .app-legend { text-align:center; font-size:0.95rem; color:var(--muted); margin-top:4px; }
-
-    .btn-icon { border-radius:50%; width:40px; height:40px; display:flex; align-items:center; justify-content:center; }
-
-    .topbar { display:flex; gap:8px; justify-content:center; align-items:center; flex-wrap:wrap; margin:12px 0; }
-    .nav-btn { width:44px; height:44px; padding:0; border-radius:8px; display:flex; align-items:center; justify-content:center; }
-    .nav-btn.active { box-shadow: inset 0 3px 6px rgba(0,0,0,0.12); }
-
-    .card-kpi { border-radius:10px; background:var(--card-bg); box-shadow:0 3px 10px rgba(0,0,0,0.06); padding:12px; }
-    .kpi-label { font-size:0.85rem; color:var(--muted); }
-    .kpi-value { font-weight:700; color:var(--verde-souza); font-size:1.3rem; }
-
-    #map { height:420px; border-radius:12px; margin-bottom:12px; }
-    .truck-label { color:#fff; font-weight:600; text-shadow:0 0 4px rgba(0,0,0,0.8); font-size:12px; padding:2px 6px; border-radius:4px; background:rgba(0,0,0,0.55); }
-    .chart-card { padding:12px; border-radius:10px; background:var(--card-bg); box-shadow:0 3px 10px rgba(0,0,0,0.06); }
-
-    canvas { max-height:300px !important; height:300px !important; }
-    .section { display:none; }
-    .section.active { display:block; }
-
-    .footer { text-align:center; color:var(--muted); margin-top:14px; font-size:0.85rem; }
-
-    @media (max-width:768px){
-      #map { height:320px; }
-      h1 { font-size:18px; }
-      canvas { max-height:260px !important; }
-    }
+    /* small style for leaflet truck div markers, ensure pointer-events none for label markers if needed */
+    .custom-truck-marker{ display:inline-block; }
   </style>
 </head>
 <body>
@@ -86,7 +78,7 @@
       <button id="btnVolume" class="btn btn-outline-primary nav-btn" title="Volume Entregue">📊</button>
     </div>
 
-    <!-- STATUS -->
+    <!-- ===== STATUS FROTA ===== -->
     <div id="sectionStatus" class="section active">
       <div class="d-flex gap-2 flex-wrap mb-2">
         <select id="filtroStatus" class="form-select form-select-sm" style="width:220px"><option value="">Todos os Status</option></select>
@@ -98,13 +90,12 @@
         <div id="resumoTexto">Carregando dados...</div>
       </div>
 
-      <!-- mapa google será injetado aqui -->
       <div id="map"></div>
 
       <div id="frotaContainer" class="row g-3 mt-2"></div>
     </div>
 
-    <!-- PRODUTIVIDADE -->
+    <!-- ===== PRODUTIVIDADE ===== -->
     <div id="sectionProd" class="section">
       <div class="row g-3 mb-2">
         <div class="col-md-3"><div class="card card-kpi"><div class="kpi-label">Faturamento Total</div><div id="kpiFaturamento" class="kpi-value">--</div></div></div>
@@ -119,7 +110,7 @@
       </div>
     </div>
 
-    <!-- VOLUME -->
+    <!-- ===== VOLUME ENTREGUE ===== -->
     <div id="sectionVolume" class="section">
       <div class="row g-3 mb-2">
         <div class="col-md-4"><div class="card card-kpi"><div class="kpi-label">Volume Total (ton)</div><div id="kpiVolumeTotal" class="kpi-value">--</div></div></div>
@@ -136,9 +127,9 @@
     <div class="footer">© 2025 Souza Transportes</div>
   </div>
 
-  <!-- ================= SCRIPT ================= -->
+  <!-- ================= JS ================= -->
   <script>
-    // === Config ===
+    // Config
     const scriptURL = "https://script.google.com/macros/s/AKfycbyZDvHD4CCG4xAbuIjckNApANUkDow8uifF96C1R5DRKd4soQJVZKvNoWJ6hLDPyc5n/exec";
 
     // formatters
@@ -146,13 +137,13 @@
     const fmtNum1 = v => (typeof v === 'number' ? v.toLocaleString('pt-BR',{maximumFractionDigits:1}) : v);
 
     // state
-    let map; // google map instance
-    let markers = []; // google markers
-    let infowindows = [];
+    let map;                 // Leaflet map
+    let markers = [];        // leaflet markers
+    let labelMarkers = [];   // label markers if used
     let dadosFrota = [];
     let charts = [];
 
-    // helper numbers
+    // helpers
     function toNumber(v){
       if(v === null || v === undefined) return 0;
       if(typeof v === 'number') return v;
@@ -161,66 +152,53 @@
       return isNaN(n) ? 0 : n;
     }
     function clearCharts(){ charts.forEach(c=>{ try{ c.destroy(); }catch(e){} }); charts=[]; }
-    function clearMapMarkers(){ markers.forEach(m=>m.setMap(null)); markers=[]; infowindows.forEach(i=>i.close()); infowindows=[]; }
+    function clearMapMarkers(){ markers.forEach(m=>map.removeLayer(m)); markers=[]; labelMarkers.forEach(l=>map.removeLayer(l)); labelMarkers=[]; }
 
-    // ------- Google Maps functions -------
-    function initMap() {
-      // Create map (hybrid)
-      const center = { lat: -15.78, lng: -47.93 };
-      map = new google.maps.Map(document.getElementById("map"), {
-        center,
-        zoom: 5,
-        mapTypeId: "hybrid",
-        streetViewControl: false,
-        mapTypeControl: true,
-        fullscreenControl: true
-      });
+    // ---------- Leaflet map init (Esri Hybrid) ----------
+    function initMap(){
+      if(map) return;
+      map = L.map('map').setView([-15.78, -47.93], 5);
+
+      // Esri satellite tiles
+      const sat = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+        attribution: 'Tiles © Esri'
+      }).addTo(map);
+
+      // OSM labels overlay (roads/cities)
+      const labels = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '&copy; OpenStreetMap'
+      }).addTo(map);
+
+      // layer control
+      const osm = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png');
+      const hybrid = L.layerGroup([sat, labels]);
+      L.control.layers({ "🛰 Satélite (com rótulos)": hybrid, "🗺 OpenStreetMap": osm }).addTo(map);
     }
 
-    function addGoogleTruck(lat, lon, name, status) {
-      if (isNaN(lat) || isNaN(lon)) return null;
+    // create a divIcon marker with name visible
+    function addTruck(lat, lon, nome, status){
+      if(isNaN(lat) || isNaN(lon)) return null;
       const lower = (status||'').toLowerCase();
-      const color = lower.includes('carregado') ? 'green' : (lower.includes('descarregando') ? 'orange' : 'red');
+      const bg = lower.includes('carregado') ? '#2e7d32' : (lower.includes('descarregando') ? '#ff9800' : '#d32f2f');
 
-      // Use Google Chart API pin icon with truck and color
-      const iconUrl = `https://chart.googleapis.com/chart?chst=d_map_pin_icon&chld=local_shipping|${color}`;
+      const markerHtml = `<div style="display:inline-block;background:${bg};color:#fff;border-radius:6px;padding:2px 6px;font-size:12px;box-shadow:0 1px 4px rgba(0,0,0,0.4);">🚛&nbsp;${nome}</div>`;
 
-      const marker = new google.maps.Marker({
-        position: { lat: lat, lng: lon },
-        map,
-        title: name,
-        icon: {
-          url: iconUrl,
-          scaledSize: new google.maps.Size(36, 36)
-        }
-      });
-
-      const info = new google.maps.InfoWindow({
-        content: `<div style="font-weight:700;">${name}</div><div style="font-size:0.9rem;color:#444;">${status || '-'}</div>`
-      });
-
-      marker.addListener('click', () => {
-        // close others
-        infowindows.forEach(i => i.close());
-        info.open(map, marker);
-      });
-
-      markers.push(marker);
-      infowindows.push(info);
-      return marker;
+      const icon = L.divIcon({ html: markerHtml, className: 'custom-truck-marker', iconSize:[90,26], iconAnchor:[45,13] });
+      const m = L.marker([lat,lon], { icon }).addTo(map);
+      m.bindPopup(`<b>${nome}</b><br>${status || '-'}`);
+      markers.push(m);
+      return m;
     }
 
-    function focusTruck(lat, lon) {
-      if (!map) return;
-      if (isNaN(lat) || isNaN(lon)) return;
-      try{
-        map.setCenter({ lat: lat, lng: lon });
-        map.setZoom(12);
-      }catch(e){ console.warn(e); }
+    function focusTruck(lat, lon){
+      if(!map) return;
+      if(isNaN(lat) || isNaN(lon)) return;
+      map.setView([lat, lon], 12, { animate:true });
     }
 
-    // ------- Fetch & render Frota -------
+    // ---------- Fetch & render Status Frota ----------
     async function buscarDados(){
+      initMap();
       clearMapMarkers();
       const cont = document.getElementById('frotaContainer');
       cont.innerHTML = "<p class='text-center text-muted'>🔄 Carregando frota...</p>";
@@ -237,7 +215,7 @@
         const vazios = total - carreg - descar;
         document.getElementById('resumoTexto').innerHTML = `Total: <b>${total}</b> | Carregados: <b style="color:green">${carreg}</b> | Descarregando: <b style="color:orange">${descar}</b> | Vazios: <b style="color:red">${vazios}</b>`;
 
-        // fill filters
+        // fill filters (Status, Produto, Destino)
         const setStatus = new Set(), setProduto = new Set(), setDestino = new Set();
         dadosFrota.forEach(r => { setStatus.add(r.Status); setProduto.add(r.Produto); setDestino.add(r.Destino); });
         const fill = (id, set) => {
@@ -247,7 +225,7 @@
         };
         fill('filtroStatus', setStatus); fill('filtroProduto', setProduto); fill('filtroDestino', setDestino);
 
-        // list cards and add markers
+        // render cards and markers
         cont.innerHTML = '';
         const group = [];
         dadosFrota.forEach((r, idx) => {
@@ -263,28 +241,22 @@
               <p class="mb-0"><strong>Produto:</strong> ${r.Produto || '-'}</p>
               <p class="mb-0"><strong>Posição:</strong> ${r["Posição"] || '-'}</p>
               <p class="mb-0"><strong>Destino:</strong> ${r.Destino || '-'}</p>
-              <div class="mt-2">
-                <button class="btn btn-sm btn-outline-success btn-map" data-lat="${lat||''}" data-lon="${lon||''}" data-name="${nome}">📍 Mapa</button>
-              </div>
+              <div class="mt-2"><button class="btn btn-sm btn-outline-success btn-map" data-lat="${lat||''}" data-lon="${lon||''}" data-name="${nome}">📍 Mapa</button></div>
             </div>
           </div>`;
 
           if(!isNaN(lat) && !isNaN(lon)){
-            addGoogleTruck(lat, lon, nome, status);
-            group.push(new google.maps.LatLng(lat, lon));
+            addTruck(lat, lon, nome, status);
+            group.push([lat, lon]);
           }
         });
 
         // fit bounds
         try{
-          if(group.length){
-            const bounds = new google.maps.LatLngBounds();
-            group.forEach(g => bounds.extend(g));
-            map.fitBounds(bounds, 60);
-          }
+          if(group.length) map.fitBounds(group, { padding:[60,60] });
         }catch(e){ console.warn(e); }
 
-        // attach map button handlers
+        // attach handlers
         document.querySelectorAll('.btn-map').forEach(btn => {
           btn.addEventListener('click', () => {
             const lat = parseFloat(btn.getAttribute('data-lat'));
@@ -292,9 +264,11 @@
             const name = btn.getAttribute('data-name');
             if(!isNaN(lat) && !isNaN(lon)) focusTruck(lat, lon);
             else {
-              // fallback: find marker by title
-              const m = markers.find(mk => mk.getTitle && mk.getTitle() === name);
-              if(m){ map.setCenter(m.getPosition()); map.setZoom(12); }
+              // fallback: find marker by popup/title
+              const m = markers.find(mk => {
+                try{ return mk.getPopup().getContent().includes(name); }catch(e){ return false; }
+              });
+              if(m){ map.setView(m.getLatLng(), 12); m.openPopup(); }
             }
           });
         });
@@ -305,7 +279,7 @@
       }
     }
 
-    // ------- filters -------
+    // filters change
     document.getElementById('filtroStatus').addEventListener('change', aplicarFiltros);
     document.getElementById('filtroProduto').addEventListener('change', aplicarFiltros);
     document.getElementById('filtroDestino').addEventListener('change', aplicarFiltros);
@@ -314,13 +288,13 @@
       const fStatus = document.getElementById('filtroStatus').value.toLowerCase();
       const fProduto = document.getElementById('filtroProduto').value.toLowerCase();
       const fDestino = document.getElementById('filtroDestino').value.toLowerCase();
+
       const filtrados = dadosFrota.filter(v =>
         (!fStatus || (v.Status||'').toLowerCase().includes(fStatus)) &&
         (!fProduto || (v.Produto||'').toLowerCase().includes(fProduto)) &&
         (!fDestino || (v.Destino||'').toLowerCase().includes(fDestino))
       );
 
-      // rerender cards and markers for filtered set
       const cont = document.getElementById('frotaContainer');
       cont.innerHTML = '';
       clearMapMarkers();
@@ -338,13 +312,11 @@
             <p class="mb-0"><strong>Produto:</strong> ${r.Produto || '-'}</p>
             <p class="mb-0"><strong>Posição:</strong> ${r["Posição"] || '-'}</p>
             <p class="mb-0"><strong>Destino:</strong> ${r.Destino || '-'}</p>
-            <div class="mt-2">
-              <button class="btn btn-sm btn-outline-success btn-map" data-lat="${lat||''}" data-lon="${lon||''}" data-name="${nome}">📍 Mapa</button>
-            </div>
+            <div class="mt-2"><button class="btn btn-sm btn-outline-success btn-map" data-lat="${lat||''}" data-lon="${lon||''}" data-name="${nome}">📍 Mapa</button></div>
           </div>
         </div>`;
 
-        if(!isNaN(lat) && !isNaN(lon)){ addGoogleTruck(lat, lon, nome, status); group.push(new google.maps.LatLng(lat, lon)); }
+        if(!isNaN(lat) && !isNaN(lon)){ addTruck(lat, lon, nome, status); group.push([lat,lon]); }
       });
 
       // reattach handlers
@@ -355,16 +327,18 @@
           const name = btn.getAttribute('data-name');
           if(!isNaN(lat) && !isNaN(lon)) focusTruck(lat, lon);
           else {
-            const m = markers.find(mk => mk.getTitle && mk.getTitle() === name);
-            if(m){ map.setCenter(m.getPosition()); map.setZoom(12); }
+            const m = markers.find(mk => {
+              try{ return mk.getPopup().getContent().includes(name); }catch(e){ return false; }
+            });
+            if(m){ map.setView(m.getLatLng(),12); m.openPopup(); }
           }
         });
       });
 
-      if(group.length){ try{ const bounds = new google.maps.LatLngBounds(); group.forEach(g=>bounds.extend(g)); map.fitBounds(bounds, 60); }catch(e){} }
+      if(group.length) try{ map.fitBounds(group, { padding:[60,60] }); }catch(e){}
     }
 
-    // ------- Produtividade (Comissão por motorista) -------
+    // ---------- PRODUTIVIDADE (Comissão por motorista, primeiro nome) ----------
     async function loadProdutividade(){
       clearCharts();
       document.getElementById('kpiFaturamento').innerText = 'Carregando...';
@@ -372,9 +346,9 @@
         const resp = await fetch(`${scriptURL}?aba=produtividade&t=${Date.now()}`);
         const data = await resp.json() || [];
         const byCom = {}, byPeso = {};
-        let totalFat = 0, totalCom = 0, totalPeso = 0, totalViagens = 0;
+        let totalFat=0, totalCom=0, totalPeso=0, totalViagens=0;
 
-        data.forEach(r => {
+        data.forEach(r=>{
           const motoristaFull = r.MOTORISTA || r.Motorista || r.motorista || '—';
           const firstName = String(motoristaFull).split(' ')[0] || motoristaFull;
           const peso = toNumber(r['PESO CARREGADO (TON)'] || r['PESO CARREGADO'] || r.PESO || 0);
@@ -394,30 +368,30 @@
         document.getElementById('kpiPesoTotal').innerText = totalPeso.toFixed(1);
         document.getElementById('kpiViagensTotal').innerText = totalViagens;
 
-        // Peso chart horizontal
+        // Peso chart (horizontal)
         const pesoPairs = Object.entries(byPeso).sort((a,b)=>b[1]-a[1]).slice(0,12);
         const pesoLabels = pesoPairs.map(p=>p[0]);
         const pesoData = pesoPairs.map(p=>p[1]);
-        const ctxPeso = document.getElementById('chartPesoMotorista').getContext('2d');
-        charts.push(new Chart(ctxPeso, {
+        const ctxP = document.getElementById('chartPesoMotorista').getContext('2d');
+        charts.push(new Chart(ctxP, {
           type:'bar',
           data:{ labels:pesoLabels, datasets:[{ label:'Peso (ton)', data:pesoData, backgroundColor:'rgba(46,125,50,0.7)' }] },
           options:{
             indexAxis:'y', responsive:true, maintainAspectRatio:false,
-            plugins:{ legend:{ display:false }, datalabels:{ anchor:'end', align:'right', formatter:v=>v.toLocaleString('pt-BR',{maximumFractionDigits:1}) } },
+            plugins:{ legend:{ display:false }, datalabels:{ anchor:'end', align:'right', formatter: v => v.toLocaleString('pt-BR',{maximumFractionDigits:1}) } },
             scales:{ x:{ beginAtZero:true } }
           },
           plugins:[ChartDataLabels]
         }));
 
-        // Comissão chart horizontal
+        // Comissão chart (horizontal)
         const comPairs = Object.entries(byCom).sort((a,b)=>b[1]-a[1]).slice(0,12);
         const comLabels = comPairs.map(p=>p[0]);
         const comData = comPairs.map(p=>p[1]);
         const maxCom = comData.length ? Math.max(...comData) : 0;
         const sugMax = Math.ceil(maxCom * 1.2);
-        const ctxCom = document.getElementById('chartComissaoMotorista').getContext('2d');
-        charts.push(new Chart(ctxCom, {
+        const ctxC = document.getElementById('chartComissaoMotorista').getContext('2d');
+        charts.push(new Chart(ctxC, {
           type:'bar',
           data:{ labels:comLabels, datasets:[{ label:'Comissão (R$)', data:comData, backgroundColor:'rgba(255,152,0,0.75)' }] },
           options:{
@@ -435,14 +409,14 @@
       }
     }
 
-    // ------- Volume -------
+    // ---------- VOLUME ENTREGUE ----------
     async function loadVolume(){
       clearCharts();
       try{
         const resp = await fetch(`${scriptURL}?aba=volume&t=${Date.now()}`);
         const data = await resp.json() || [];
-        const byProd = {}, byFaz = {}; let totalVol = 0;
-        data.forEach(r => {
+        const byProd = {}, byFaz = {}; let totalVol=0;
+        data.forEach(r=>{
           const prod = r.PRODUTO || r.Produto || r.produto || '';
           const faz = r.FAZENDA || r.Fazenda || r.fazenda || '';
           const vol = toNumber(r['VOLUME ENTEGUE (TON)'] || r['VOLUME ENTREGUE (TON)'] || r.VOLUME || 0);
@@ -451,11 +425,12 @@
           totalVol += vol;
         });
 
+        // KPIs
         document.getElementById('kpiVolumeTotal').innerText = totalVol.toFixed(1);
         document.getElementById('kpiProdutos').innerText = Object.keys(byProd).length;
         document.getElementById('kpiFazendas').innerText = Object.keys(byFaz).length;
 
-        // Volume por produto (horizontal)
+        // Volume por produto
         const prodPairs = Object.entries(byProd).sort((a,b)=>b[1]-a[1]).slice(0,10);
         const prodLabels = prodPairs.map(p=>p[0]); const prodData = prodPairs.map(p=>p[1]);
         const ctxVP = document.getElementById('chartVolumeProduto').getContext('2d');
@@ -486,7 +461,7 @@
       }
     }
 
-    // ------- UI: tabs, legend, controls -------
+    // ---------- UI: tabs, legend, controls ----------
     const btnStatus = document.getElementById('btnStatus');
     const btnProd = document.getElementById('btnProd');
     const btnVolume = document.getElementById('btnVolume');
@@ -513,24 +488,22 @@
     refreshBtnTop.addEventListener('click', ()=>{ if(document.getElementById('sectionStatus').classList.contains('active')) buscarDados(); else if(document.getElementById('sectionProd').classList.contains('active')) loadProdutividade(); else loadVolume(); });
     darkModeTop.addEventListener('click', ()=> document.body.classList.toggle('dark-mode'));
 
-    // initial load from param
+    // initial load
     const urlParams = new URLSearchParams(window.location.search);
     const initial = (urlParams.get('aba') || 'status').toLowerCase();
 
     window.addEventListener('load', () => {
-      // initialize map script will call initMap; wait for maps API
+      // init map and load appropriate tab
+      initMap();
       if(initial === 'produtividade' || initial === 'prod') { activateTab(btnProd,'sectionProd','prod'); loadProdutividade(); }
       else if(initial === 'volume') { activateTab(btnVolume,'sectionVolume','volume'); loadVolume(); }
       else { activateTab(btnStatus,'sectionStatus','status'); buscarDados(); }
 
-      // service worker registration (optional)
+      // service worker (optional)
       if('serviceWorker' in navigator){
         navigator.serviceWorker.register('./service-worker.js').then(()=>console.log('SW registrado')).catch(()=>{});
       }
     });
   </script>
-
-  <!-- Google Maps JS API (callback initMap) - carregado async -->
-  <script src="https://maps.googleapis.com/maps/api/js?callback=initMap" async defer></script>
 </body>
 </html>
