@@ -3,15 +3,17 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Souza Dashboard</title>
+  <title>Souza Transportes</title>
 
-  <!-- Bootstrap, Leaflet, Chart.js e plugin datalabels -->
+  <!-- PWA manifest & icons -->
+  <link rel="manifest" href="manifest.json">
+  <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
+  <link rel="apple-touch-icon" href="icon-512.png">
+  <meta name="theme-color" content="#2e7d32"/>
+
+  <!-- CSS / libs -->
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2"></script>
-
   <style>
     :root{
       --verde-souza:#2e7d32;
@@ -21,7 +23,6 @@
     }
     body{ background:var(--bg); color:#222; font-family:"Segoe UI",Roboto,Arial,sans-serif; padding:12px; transition:background .25s,color .25s; }
     body.dark-mode{ background:#111; color:#eee; }
-
     header{ display:flex; align-items:center; justify-content:space-between; gap:8px; flex-wrap:wrap; margin-bottom:8px; }
     .logo-left{ width:56px; height:auto; border-radius:6px; }
     .title-wrap{ text-align:center; flex:1; min-width:180px; }
@@ -41,7 +42,7 @@
     #map{ height:420px; border-radius:12px; margin-bottom:12px; }
     .chart-card{ padding:12px; border-radius:10px; background:var(--card-bg); box-shadow:0 3px 10px rgba(0,0,0,0.06); }
 
-    canvas{ max-height:300px !important; height:300px !important; }
+    canvas{ max-height:300px !important; height:300px !important; width:100% !important; }
     .section{ display:none; }
     .section.active{ display:block; }
 
@@ -85,7 +86,7 @@
       <button id="btnVolume" class="btn btn-outline-primary nav-btn" title="Volume Entregue">📊</button>
     </div>
 
-    <!-- STATUS -->
+    <!-- === STATUS FROTA === -->
     <div id="sectionStatus" class="section active">
       <div class="d-flex gap-2 flex-wrap mb-2">
         <select id="filtroStatus" class="form-select form-select-sm" style="width:220px"><option value="">Todos os Status</option></select>
@@ -100,7 +101,7 @@
       <div id="frotaContainer" class="row g-3 mt-2"></div>
     </div>
 
-    <!-- PRODUTIVIDADE -->
+    <!-- === PRODUTIVIDADE === -->
     <div id="sectionProd" class="section">
       <div class="row g-3 mb-2">
         <div class="col-md-3"><div class="card card-kpi"><div class="kpi-label">Faturamento Total</div><div id="kpiFaturamento" class="kpi-value">--</div></div></div>
@@ -115,47 +116,39 @@
       </div>
     </div>
 
-    <!-- VOLUME -->
+    <!-- === VOLUME ENTREGUE === -->
     <div id="sectionVolume" class="section">
       <div class="row g-3 mb-2">
         <div class="col-md-4"><div class="card card-kpi"><div class="kpi-label">Volume Total (ton)</div><div id="kpiVolumeTotal" class="kpi-value">--</div></div></div>
-        <div class="col-md-4"><div class="card card-kpi"><div class="kpi-label">Produtos</div><div id="kpiProdutos" class="kpi-value">--</div></div></div>
-        <div class="col-md-4"><div class="card card-kpi"><div class="kpi-label">Fazendas</div><div id="kpiFazendas" class="kpi-value">--</div></div></div>
+        <!-- removed Products and Fazendas KPIs per your request -->
       </div>
 
-      <div class="row g-3">
-        <div class="col-md-6"><div class="chart-card"><h6>Volume por Produto</h6><canvas id="chartVolumeProduto"></canvas></div></div>
-        <div class="col-md-6"><div class="chart-card"><h6>Top Fazendas por Volume</h6><canvas id="chartVolumeFazenda"></canvas></div></div>
-      </div>
+      <div id="volumeByFazenda" class="mt-2"></div>
     </div>
 
     <div class="footer">© 2025 Souza Transportes</div>
   </div>
 
+  <!-- libs -->
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2"></script>
+
   <script>
-    /* ================= CONFIG ================= */
+  (function(){
+    // ========== CONFIG ==========
     const scriptURL = "https://script.google.com/macros/s/AKfycbyZDvHD4CCG4xAbuIjckNApANUkDow8uifF96C1R5DRKd4soQJVZKvNoWJ6hLDPyc5n/exec";
-    const geocodeCacheKey = 'souza_geocode_cache_v1'; // localStorage key
+    const geocodeCacheKey = 'souza_geocode_cache_v1';
     const fmtBRL_noCents = v => new Intl.NumberFormat('pt-BR',{style:'currency',currency:'BRL',maximumFractionDigits:0}).format(Math.round(v));
     const fmtNum1 = v => (typeof v === 'number' ? v.toLocaleString('pt-BR',{maximumFractionDigits:1}) : v);
 
-    let map;                 // Leaflet map
-    let markers = [];        // leaflet markers
-    let dadosFrota = [];     // fetched fleet
+    // ========== STATE ==========
+    let map = null;
+    let markers = [];
+    let dadosFrota = [];
     let charts = [];
 
-    // load or init geocode cache
-    function loadGeocodeCache(){
-      try{
-        const raw = localStorage.getItem(geocodeCacheKey);
-        return raw ? JSON.parse(raw) : {};
-      }catch(e){ return {}; }
-    }
-    function saveGeocodeCache(cache){
-      try{ localStorage.setItem(geocodeCacheKey, JSON.stringify(cache)); }catch(e){}
-    }
-
-    // helpers
+    // ========== HELPERS ==========
     function toNumber(v){
       if(v === null || v === undefined) return 0;
       if(typeof v === 'number') return v;
@@ -163,39 +156,33 @@
       const n = parseFloat(s);
       return isNaN(n) ? 0 : n;
     }
-    function clearCharts(){ charts.forEach(c=>{ try{ c.destroy(); }catch(e){} }); charts = []; }
-    function clearMapMarkers(){ markers.forEach(m=>map.removeLayer(m)); markers = []; }
+    function clearCharts(){ charts.forEach(c=>{ try{ c.destroy(); }catch(e){} }); charts=[]; }
+    function clearMapMarkers(){ markers.forEach(m=>{ try{ map.removeLayer(m); }catch(e){} }); markers=[]; }
 
-    /* ============== MAP (Leaflet hybrid: Esri + OSM) ============== */
+    // geocode cache
+    function loadGeocodeCache(){ try{ const raw = localStorage.getItem(geocodeCacheKey); return raw ? JSON.parse(raw) : {}; }catch(e){ return {}; } }
+    function saveGeocodeCache(c){ try{ localStorage.setItem(geocodeCacheKey, JSON.stringify(c)); }catch(e){} }
+
+    // ========== MAP (Leaflet hybrid Esri + OSM) ==========
     function initMap(){
       if(map) return;
       map = L.map('map', { preferCanvas: true }).setView([-15.78, -47.93], 5);
 
-      // Esri satellite tiles (World Imagery)
-      const esriSat = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
-        attribution: 'Tiles © Esri'
-      });
+      const esriSat = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', { attribution: 'Tiles © Esri' });
+      const osmLabels = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '&copy; OpenStreetMap contributors' });
 
-      // OSM labels (roads/cities)
-      const osmLabels = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        attribution: '&copy; OpenStreetMap contributors'
-      });
-
-      // add hybrid by default (satellite + labels stacked)
       const hybrid = L.layerGroup([esriSat, osmLabels]).addTo(map);
-
       const osm = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png');
       L.control.layers({ "🛰 Satélite (com rótulos)": hybrid, "🗺 OpenStreetMap": osm }).addTo(map);
     }
 
-    // create marker with visible name (divIcon)
     function createTruckMarker(lat, lon, name, status){
       if(!map || isNaN(lat) || isNaN(lon)) return null;
       const lower = (status||'').toLowerCase();
       const bg = lower.includes('carregado') ? '#2e7d32' : (lower.includes('descarregando') ? '#ff9800' : '#d32f2f');
       const html = `<div class="truck-div" style="background:${bg};">🚛 ${name}</div>`;
-      const icon = L.divIcon({ html, className:'truck-div-icon', iconSize: [Math.min(200, name.length*8 + 40), 28], iconAnchor:[10,14] });
-      const m = L.marker([lat, lon], { icon }).addTo(map);
+      const icon = L.divIcon({ html, className:'truck-div-icon', iconSize:[Math.min(220, name.length*8+40),28], iconAnchor:[10,14] });
+      const m = L.marker([lat,lon], { icon }).addTo(map);
       m.bindPopup(`<strong>${name}</strong><br>${status || '-'}`);
       markers.push(m);
       return m;
@@ -206,21 +193,17 @@
       map.setView([lat, lon], 12, { animate:true });
     }
 
-    // geocode by city name (Posição) using Nominatim, with localStorage cache and slight delay between requests
+    // polite geocode (Nominatim) with caching and small delay
     async function geocodeCity(city){
       if(!city || !String(city).trim()) return null;
       const key = String(city).trim();
       const cache = loadGeocodeCache();
       if(cache[key]) return cache[key];
-
-      // polite request to Nominatim: add "Brasil" to improve results
       const q = `${key}, Brasil`;
       const url = `https://nominatim.openstreetmap.org/search?format=json&limit=1&q=${encodeURIComponent(q)}`;
-
       try{
-        // small delay to avoid hammering (if many cities)
-        await new Promise(r => setTimeout(r, 300));
-        const resp = await fetch(url, { headers: { 'Accept-Language': 'pt-BR' } });
+        await new Promise(r=>setTimeout(r, 250)); // small delay
+        const resp = await fetch(url, { headers:{ 'Accept-Language':'pt-BR' } });
         if(!resp.ok) return null;
         const arr = await resp.json();
         if(arr && arr[0]){
@@ -231,23 +214,23 @@
             return cache[key];
           }
         }
-      }catch(e){ console.warn('geocode error', e); }
+      }catch(e){ console.warn('geocodeCity error', e); }
       return null;
     }
 
-    // fetch fleet, geocode cities (cached), render cards and markers
+    // ========== STATUS FROTA: fetch + render ==========
     async function buscarDados(){
       initMap();
       clearMapMarkers();
-      const container = document.getElementById('frotaContainer');
-      container.innerHTML = "<p class='text-center text-muted'>🔄 Carregando frota...</p>";
+      const cont = document.getElementById('frotaContainer');
+      cont.innerHTML = "<p class='text-center text-muted'>🔄 Carregando frota...</p>";
 
       try{
         const resp = await fetch(`${scriptURL}?aba=status&t=${Date.now()}`);
         const data = await resp.json();
         dadosFrota = data || [];
 
-        // resumo counts
+        // resumo
         const total = dadosFrota.length;
         const carreg = dadosFrota.filter(x => (x.Status||'').toLowerCase().includes('carregado')).length;
         const descar = dadosFrota.filter(x => (x.Status||'').toLowerCase().includes('descarregando')).length;
@@ -264,15 +247,16 @@
         };
         fill('filtroStatus', setStatus); fill('filtroProduto', setProduto); fill('filtroDestino', setDestino);
 
-        container.innerHTML = '';
+        cont.innerHTML = '';
         const bounds = [];
 
-        // we will geocode cities sequentially but with cache to be polite
+        // Geocode sequentially (cache will speed up)
         for(const r of dadosFrota){
-          const nome = r.Frota || r.frota || 'Veículo';
+          const nome = r.Frota || r.frota || `Veículo`;
           const status = r.Status || '';
           const produto = r.Produto || '-';
           const posicao = r['Posição'] || r.Posicao || r.Local || '';
+          const destino = r.Destino || '-';
 
           const card = document.createElement('div');
           card.className = 'col-6 col-md-3';
@@ -281,48 +265,101 @@
             <p class="small text-muted mb-1">${status}</p>
             <p class="mb-0"><strong>Produto:</strong> ${produto}</p>
             <p class="mb-0"><strong>Posição:</strong> ${posicao || '-'}</p>
-            <p class="mb-0"><strong>Destino:</strong> ${r.Destino || '-'}</p>
+            <p class="mb-0"><strong>Destino:</strong> ${destino}</p>
             <div class="mt-2"><button class="btn btn-sm btn-outline-success btn-map" data-pos="${posicao}" data-name="${nome}">📍 Mapa</button></div>
           </div>`;
-          container.appendChild(card);
+          cont.appendChild(card);
 
           if(posicao){
             const geo = await geocodeCity(posicao);
             if(geo){
               const m = createTruckMarker(geo.lat, geo.lon, nome, status);
               if(m) bounds.push([geo.lat, geo.lon]);
-              // attach click on map button to focus
+              // attach focus
               const btn = card.querySelector('.btn-map');
-              if(btn){
-                btn.addEventListener('click', () => {
-                  focusTruck(geo.lat, geo.lon);
-                  try{ m.openPopup(); }catch(e){}
-                });
-              }
+              if(btn) btn.addEventListener('click', ()=>{ focusTruck(geo.lat, geo.lon); try{ m.openPopup(); }catch(e){} });
             } else {
-              // geocode failed — attach fallback to alert user
+              // fallback attach alert
               const btn = card.querySelector('.btn-map');
               if(btn) btn.addEventListener('click', ()=> alert('Localização não encontrada para: ' + posicao));
             }
           } else {
-            // no posicao field
             const btn = card.querySelector('.btn-map');
             if(btn) btn.addEventListener('click', ()=> alert('Posição não informada para este veículo.'));
           }
         }
 
-        // fit map to bounds if available
-        try{
-          if(bounds.length) map.fitBounds(bounds, { padding:[60,60] });
-        }catch(e){ console.warn(e); }
+        if(bounds.length){
+          try{ map.fitBounds(bounds, { padding:[60,60] }); }catch(e){ console.warn(e); }
+        }
 
       }catch(err){
         console.error('Erro buscarDados', err);
-        container.innerHTML = "<p class='text-danger text-center'>Erro ao carregar frota.</p>";
+        cont.innerHTML = "<p class='text-danger text-center'>Erro ao carregar frota.</p>";
       }
     }
 
-    /* ============== PRODUTIVIDADE (Comissão por motorista) ============== */
+    // Filters event binding
+    document.getElementById('filtroStatus').addEventListener('change', aplicarFiltros);
+    document.getElementById('filtroProduto').addEventListener('change', aplicarFiltros);
+    document.getElementById('filtroDestino').addEventListener('change', aplicarFiltros);
+
+    async function aplicarFiltros(){
+      const fStatus = document.getElementById('filtroStatus').value.toLowerCase();
+      const fProduto = document.getElementById('filtroProduto').value.toLowerCase();
+      const fDestino = document.getElementById('filtroDestino').value.toLowerCase();
+      const filtrados = dadosFrota.filter(v =>
+        (!fStatus || (v.Status||'').toLowerCase().includes(fStatus)) &&
+        (!fProduto || (v.Produto||'').toLowerCase().includes(fProduto)) &&
+        (!fDestino || (v.Destino||'').toLowerCase().includes(fDestino))
+      );
+
+      // re-render markers/cards from filtrados
+      clearMapMarkers();
+      const cont = document.getElementById('frotaContainer');
+      cont.innerHTML = '';
+      const bounds=[];
+
+      for(const r of filtrados){
+        const nome = r.Frota || r.frota || `Veículo`;
+        const status = r.Status || '';
+        const produto = r.Produto || '-';
+        const posicao = r['Posição'] || r.Posicao || r.Local || '';
+        const destino = r.Destino || '-';
+
+        const card = document.createElement('div');
+        card.className = 'col-6 col-md-3';
+        card.innerHTML = `<div class="card p-2">
+          <h6>${nome}</h6>
+          <p class="small text-muted mb-1">${status}</p>
+          <p class="mb-0"><strong>Produto:</strong> ${produto}</p>
+          <p class="mb-0"><strong>Posição:</strong> ${posicao || '-'}</p>
+          <p class="mb-0"><strong>Destino:</strong> ${destino}</p>
+          <div class="mt-2"><button class="btn btn-sm btn-outline-success btn-map" data-pos="${posicao}" data-name="${nome}">📍 Mapa</button></div>
+        </div>`;
+        cont.appendChild(card);
+
+        if(posicao){
+          const geo = await geocodeCity(posicao);
+          if(geo){
+            const m = createTruckMarker(geo.lat, geo.lon, nome, status);
+            if(m) bounds.push([geo.lat, geo.lon]);
+            const btn = card.querySelector('.btn-map');
+            if(btn) btn.addEventListener('click', ()=>{ focusTruck(geo.lat, geo.lon); try{ m.openPopup(); }catch(e){} });
+          } else {
+            const btn = card.querySelector('.btn-map');
+            if(btn) btn.addEventListener('click', ()=> alert('Localização não encontrada para: ' + posicao));
+          }
+        } else {
+          const btn = card.querySelector('.btn-map');
+          if(btn) btn.addEventListener('click', ()=> alert('Posição não informada para este veículo.'));
+        }
+      }
+
+      if(bounds.length) try{ map.fitBounds(bounds, { padding:[60,60] }); }catch(e){}
+    }
+
+    // ========== PRODUTIVIDADE ==========
     async function loadProdutividade(){
       clearCharts();
       document.getElementById('kpiFaturamento').innerText = 'Carregando...';
@@ -352,7 +389,7 @@
         document.getElementById('kpiPesoTotal').innerText = totalPeso.toFixed(1);
         document.getElementById('kpiViagensTotal').innerText = totalViagens;
 
-        // Peso chart horizontal
+        // Peso chart (horizontal)
         const pesoPairs = Object.entries(byPeso).sort((a,b)=>b[1]-a[1]).slice(0,12);
         const pesoLabels = pesoPairs.map(p=>p[0]);
         const pesoData = pesoPairs.map(p=>p[1]);
@@ -368,7 +405,7 @@
           plugins:[ChartDataLabels]
         }));
 
-        // Comissão chart horizontal
+        // Comissão chart (horizontal)
         const comPairs = Object.entries(byCom).sort((a,b)=>b[1]-a[1]).slice(0,12);
         const comLabels = comPairs.map(p=>p[0]);
         const comData = comPairs.map(p=>p[1]);
@@ -393,58 +430,58 @@
       }
     }
 
-    /* ============== VOLUME ENTREGUE ============== */
+    // ========== VOLUME ENTREGUE (por fazenda: lista produtos + quantidades) ==========
     async function loadVolume(){
       clearCharts();
+      document.getElementById('kpiVolumeTotal').innerText = '--';
+      const container = document.getElementById('volumeByFazenda');
+      container.innerHTML = "<p class='text-center text-muted'>🔄 Carregando volume...</p>";
+
       try{
         const resp = await fetch(`${scriptURL}?aba=volume&t=${Date.now()}`);
         const data = await resp.json() || [];
-        const byProd = {}, byFaz = {}; let totalVol=0;
+
+        // aggregate by fazenda -> product -> sum
+        const byFaz = {};
+        let totalVol = 0;
         data.forEach(r=>{
-          const prod = r.PRODUTO || r.Produto || r.produto || '';
-          const faz = r.FAZENDA || r.Fazenda || r.fazenda || '';
+          const faz = (r.FAZENDA || r.Fazenda || r.fazenda || '').trim();
+          const prod = (r.PRODUTO || r.Produto || r.produto || '').trim();
           const vol = toNumber(r['VOLUME ENTEGUE (TON)'] || r['VOLUME ENTREGUE (TON)'] || r.VOLUME || 0);
-          if(prod) byProd[prod] = (byProd[prod]||0) + vol;
-          if(faz) byFaz[faz] = (byFaz[faz]||0) + vol;
+          if(!faz) return;
+          if(!byFaz[faz]) byFaz[faz] = {};
+          if(!byFaz[faz][prod]) byFaz[faz][prod] = 0;
+          byFaz[faz][prod] += vol;
           totalVol += vol;
         });
 
-        document.getElementById('kpiVolumeTotal').innerText = totalVol.toFixed(1);
-        document.getElementById('kpiProdutos').innerText = Object.keys(byProd).length;
-        document.getElementById('kpiFazendas').innerText = Object.keys(byFaz).length;
+        document.getElementById('kpiVolumeTotal').innerText = totalVol.toLocaleString('pt-BR',{maximumFractionDigits:1}) + " ton";
 
-        // Volume por produto (horizontal)
-        const prodPairs = Object.entries(byProd).sort((a,b)=>b[1]-a[1]).slice(0,10);
-        const prodLabels = prodPairs.map(p=>p[0]); const prodData = prodPairs.map(p=>p[1]);
-        const ctxVP = document.getElementById('chartVolumeProduto').getContext('2d');
-        charts.push(new Chart(ctxVP, {
-          type:'bar',
-          data:{ labels:prodLabels, datasets:[{ label:'Volume (ton)', data:prodData, backgroundColor:'rgba(46,125,50,0.7)' }] },
-          options:{
-            indexAxis:'y', responsive:true, maintainAspectRatio:false,
-            plugins:{ legend:{ display:false }, datalabels:{ anchor:'end', align:'right', formatter:v=>v.toLocaleString('pt-BR',{maximumFractionDigits:1}) } },
-            scales:{ x:{ beginAtZero:true } }
-          },
-          plugins:[ChartDataLabels]
-        }));
+        // render list: each fazenda card with product lines sorted by volume desc
+        const fazendas = Object.keys(byFaz).sort();
+        if(fazendas.length === 0){
+          container.innerHTML = "<p class='text-muted'>Nenhum registro de volume encontrado.</p>";
+          return;
+        }
+        let html = '';
+        for(const faz of fazendas){
+          const prodMap = byFaz[faz];
+          const products = Object.entries(prodMap).sort((a,b)=>b[1]-a[1]);
+          html += `<div class="card mb-2 p-2"><strong>🌾 ${faz}</strong><ul class="mb-0 mt-2">`;
+          products.forEach(([prod, vol])=>{
+            html += `<li>${prod} → <b>${vol.toLocaleString('pt-BR',{maximumFractionDigits:1})} ton</b></li>`;
+          });
+          html += `</ul></div>`;
+        }
+        container.innerHTML = html;
 
-        // Fazendas pie
-        const fazPairs = Object.entries(byFaz).sort((a,b)=>b[1]-a[1]).slice(0,8);
-        const fazLabels = fazPairs.map(p=>p[0]); const fazData = fazPairs.map(p=>p[1]);
-        const ctxFaz = document.getElementById('chartVolumeFazenda').getContext('2d');
-        charts.push(new Chart(ctxFaz, {
-          type:'pie',
-          data:{ labels: fazLabels, datasets:[{ data: fazData, backgroundColor:['#42a5f5','#ff6384','#66bb6a','#ffa726','#ab47bc','#26c6da','#ffeb3b','#8d6e63'] }] },
-          options:{ responsive:true, maintainAspectRatio:false, plugins:{ legend:{ position:'bottom' }, datalabels:{ formatter:v=>v.toLocaleString('pt-BR',{maximumFractionDigits:1}), color:'#fff' } } },
-          plugins:[ChartDataLabels]
-        }));
-
-      }catch(e){
-        console.error('Erro volume', e);
+      }catch(err){
+        console.error('Erro loadVolume', err);
+        container.innerHTML = "<p class='text-danger'>Erro ao carregar volume.</p>";
       }
     }
 
-    /* ============== UI: Tabs & Controls ============== */
+    // ========== UI: tabs, legend, controls ==========
     const btnStatus = document.getElementById('btnStatus');
     const btnProd = document.getElementById('btnProd');
     const btnVolume = document.getElementById('btnVolume');
@@ -471,20 +508,30 @@
     refreshBtnTop.addEventListener('click', ()=>{ if(document.getElementById('sectionStatus').classList.contains('active')) buscarDados(); else if(document.getElementById('sectionProd').classList.contains('active')) loadProdutividade(); else loadVolume(); });
     darkModeTop.addEventListener('click', ()=> document.body.classList.toggle('dark-mode'));
 
-    // initial param
+    // initial load from URL param or default
     const urlParams = new URLSearchParams(window.location.search);
     const initial = (urlParams.get('aba') || 'status').toLowerCase();
 
-    // initial load
-    window.addEventListener('load', () => {
+    // ========== INIT ==========
+    window.addEventListener('load', ()=>{
+      // init map library and load first tab
       initMap();
       if(initial === 'produtividade' || initial === 'prod') { activateTab(btnProd,'sectionProd','prod'); loadProdutividade(); }
       else if(initial === 'volume') { activateTab(btnVolume,'sectionVolume','volume'); loadVolume(); }
       else { activateTab(btnStatus,'sectionStatus','status'); buscarDados(); }
 
-      // optional service worker
-      if('serviceWorker' in navigator){ navigator.serviceWorker.register('./service-worker.js').then(()=>console.log('SW registrado')).catch(()=>{}); }
+      // register service worker for PWA
+      if('serviceWorker' in navigator){
+        navigator.serviceWorker.register('service-worker.js').then(()=>console.log('SW registrado')).catch(()=>{});
+      }
     });
+
+    // expose one debug function to clear geocode cache (optional)
+    window.souza_clearGeocodeCache = function(){
+      try{ localStorage.removeItem(geocodeCacheKey); alert('Cache de geocodificação limpo.'); }catch(e){ alert('Erro ao limpar cache'); }
+    };
+
+  })();
   </script>
 </body>
 </html>
