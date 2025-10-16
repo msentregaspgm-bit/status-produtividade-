@@ -1,1 +1,178 @@
-<!-- dashboard.html completo será inserido aqui -->
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Souza Dashboard</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+  <style>
+    :root {
+      --verde-souza: #2e7d32;
+      --bg: #ffffff;
+      --text: #212529;
+    }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: "Segoe UI", sans-serif;
+      padding: 12px;
+      transition: background 0.3s, color 0.3s;
+    }
+    body.dark-mode { background:#1c1c1c; color:#fff; }
+    h1 { text-align:center; color:var(--verde-souza); font-weight:700; margin-bottom:10px; }
+    .topbar { display:flex; gap:6px; flex-wrap:wrap; justify-content:center; margin-bottom:12px; }
+    .btn-sm-icon { border-radius:50%; padding:6px 10px; font-size:1.1rem; }
+    .card-kpi { border-radius:10px; box-shadow:0 2px 6px rgba(0,0,0,0.1); }
+    .kpi-value { font-weight:700; color:var(--verde-souza); font-size:1.4rem; }
+    #map { height:420px; border-radius:12px; margin-bottom:10px; }
+    canvas { max-height:300px !important; }
+    .section { display:none; }
+    .section.active { display:block; }
+    .nav-btn.active { box-shadow: inset 0 3px 8px rgba(0,0,0,0.1); }
+    .filter-bar select { width:23%; font-size:0.9rem; }
+    @media(max-width:768px){ .filter-bar select{ width:100%; margin-bottom:8px; } }
+    .footer { text-align:center; color:#6c757d; font-size:0.85rem; margin-top:18px; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="text-center mb-2">
+      <img src="logo.png" alt="Logo Souza" style="width:150px;border-radius:10px;">
+    </div>
+    <h1>Souza Transportes</h1>
+
+    <div class="topbar">
+      <button id="btnStatus" class="btn btn-outline-success nav-btn active">🚛</button>
+      <button id="btnProdutividade" class="btn btn-outline-warning nav-btn">📈</button>
+      <button id="btnVolume" class="btn btn-outline-primary nav-btn">📊</button>
+      <button id="refreshBtn" class="btn btn-success btn-sm-icon">🔄</button>
+      <button id="darkModeBtn" class="btn btn-outline-dark btn-sm-icon">🌙</button>
+    </div>
+
+    <!-- STATUS FROTA -->
+    <div id="sectionStatus" class="section active">
+      <div class="filter-bar d-flex justify-content-between mb-2 flex-wrap gap-2">
+        <select id="filtroStatus" class="form-select form-select-sm"><option value="">Todos os Status</option></select>
+        <select id="filtroProduto" class="form-select form-select-sm"><option value="">Todos os Produtos</option></select>
+        <select id="filtroDestino" class="form-select form-select-sm"><option value="">Todos os Destinos</option></select>
+      </div>
+      <div id="resumoContainer" class="card card-kpi p-2 mb-2">
+        <div id="resumoTexto" class="small text-muted">Carregando dados...</div>
+      </div>
+      <div id="map"></div>
+      <div id="frotaContainer" class="row g-3 mt-2"></div>
+    </div>
+
+    <!-- PRODUTIVIDADE -->
+    <div id="sectionProdutividade" class="section">
+      <div class="row g-3 mb-2">
+        <div class="col-md-3"><div class="card card-kpi p-3"><div class="small text-muted">Peso Total (ton)</div><div id="kpiPesoTotal" class="kpi-value">--</div></div></div>
+        <div class="col-md-3"><div class="card card-kpi p-3"><div class="small text-muted">Viagens</div><div id="kpiViagensTotal" class="kpi-value">--</div></div></div>
+        <div class="col-md-3"><div class="card card-kpi p-3"><div class="small text-muted">Faturamento</div><div id="kpiFatTotal" class="kpi-value">--</div></div></div>
+        <div class="col-md-3"><div class="card card-kpi p-3"><div class="small text-muted">Comissão (12%)</div><div id="kpiComissaoTotal" class="kpi-value">--</div></div></div>
+      </div>
+      <div class="row g-3">
+        <div class="col-md-6"><div class="card p-3"><h6>Peso por Motorista</h6><canvas id="chartPesoMotorista"></canvas></div></div>
+        <div class="col-md-6"><div class="card p-3"><h6>Faturamento por Motorista</h6><canvas id="chartFatMotorista"></canvas></div></div>
+      </div>
+    </div>
+
+    <!-- VOLUME -->
+    <div id="sectionVolume" class="section">
+      <div class="row g-3 mb-2">
+        <div class="col-md-3"><div class="card card-kpi p-3"><div class="small text-muted">Volume Total (ton)</div><div id="kpiVolumeTotal" class="kpi-value">--</div></div></div>
+        <div class="col-md-3"><div class="card card-kpi p-3"><div class="small text-muted">Produtos</div><div id="kpiProdutos" class="kpi-value">--</div></div></div>
+        <div class="col-md-3"><div class="card card-kpi p-3"><div class="small text-muted">Fazendas</div><div id="kpiFazendas" class="kpi-value">--</div></div></div>
+        <div class="col-md-3"><div class="card card-kpi p-3"><div class="small text-muted">% Médio Entregue</div><div id="kpiPercentMedio" class="kpi-value">--</div></div></div>
+      </div>
+      <div class="row g-3">
+        <div class="col-md-6"><div class="card p-3"><h6>Volume por Produto</h6><canvas id="chartVolumeProduto"></canvas></div></div>
+        <div class="col-md-6"><div class="card p-3"><h6>Top Fazendas por Volume</h6><canvas id="chartVolumeFazenda"></canvas></div></div>
+      </div>
+    </div>
+
+    <div class="footer">© 2025 Souza Transportes</div>
+  </div>
+
+  <script>
+    const scriptURL = "https://script.google.com/macros/s/AKfycbyZDvHD4CCG4xAbuIjckNApANUkDow8uifF96C1R5DRKd4soQJVZKvNoWJ6hLDPyc5n/exec";
+    let map, markers=[], dadosFrota=[], charts=[];
+
+    const params = new URLSearchParams(window.location.search);
+    const abaInicial = (params.get('aba')||'status').toLowerCase();
+
+    // UTIL
+    function toNum(v){ if(!v)return 0; const n=parseFloat(String(v).replace(',', '.')); return isNaN(n)?0:n; }
+    function clearCharts(){ charts.forEach(c=>c.destroy&&c.destroy()); charts=[]; }
+
+    // NAV
+    const btnS=document.getElementById('btnStatus'), btnP=document.getElementById('btnProdutividade'), btnV=document.getElementById('btnVolume');
+    function showSection(btn,id){ document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('active')); btn.classList.add('active');
+      document.querySelectorAll('.section').forEach(s=>s.classList.remove('active')); document.getElementById(id).classList.add('active'); }
+    btnS.onclick=()=>{showSection(btnS,'sectionStatus');buscarDados();};
+    btnP.onclick=()=>{showSection(btnP,'sectionProdutividade');loadProd();};
+    btnV.onclick=()=>{showSection(btnV,'sectionVolume');loadVolume();};
+    document.getElementById('refreshBtn').onclick=()=>{ if(document.getElementById('sectionStatus').classList.contains('active'))buscarDados(); else if(document.getElementById('sectionProdutividade').classList.contains('active'))loadProd(); else loadVolume(); };
+    document.getElementById('darkModeBtn').onclick=()=>document.body.classList.toggle('dark-mode');
+
+    // MAP
+    function getTruckIcon(c){return L.divIcon({className:"truck-marker",html:`<div style='font-size:22px;color:${c};'>🚛</div>`,iconSize:[24,24],iconAnchor:[12,12]});}
+    async function atualizarMapa(dados){ if(!map){map=L.map('map').setView([-15,-47],5); L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);}
+      markers.forEach(m=>map.removeLayer(m)); markers=[];
+      dados.forEach(v=>{const lat=parseFloat(v.Latitude),lon=parseFloat(v.Longitude); if(!isNaN(lat)&&!isNaN(lon)){const s=(v.Status||'').toLowerCase();
+        const c=s.includes('carregado')?'green':s.includes('descarregando')?'orange':'red';
+        const mk=L.marker([lat,lon],{icon:getTruckIcon(c)}).addTo(map);
+        mk.bindPopup(`<b>${v.Frota}</b><br>${v.Status}<br>${v.Produto}<br>${v["Posição"]}<br><b>Destino:</b> ${v.Destino}`); markers.push(mk);} });
+    }
+
+    // FROTA
+    async function buscarDados(){const cont=document.getElementById('frotaContainer'); cont.innerHTML="<p class='text-center text-secondary'>Carregando...</p>";
+      try{const r=await fetch(scriptURL+'?aba=status'); const d=await r.json(); dadosFrota=d;
+        const total=d.length, carreg=d.filter(x=>(x.Status||'').toLowerCase().includes('carregado')).length, desc=d.filter(x=>(x.Status||'').toLowerCase().includes('descarregando')).length;
+        document.getElementById('resumoTexto').innerHTML=`Total: <b>${total}</b> | Carregados: <b class='text-success'>${carreg}</b> | Descarregando: <b class='text-warning'>${desc}</b> | Vazios: <b class='text-danger'>${total-carreg-desc}</b>`;
+        const stSet=new Set(), prSet=new Set(), dsSet=new Set(); d.forEach(v=>{stSet.add(v.Status);prSet.add(v.Produto);dsSet.add(v.Destino);});
+        const fill=(id,set)=>{const el=document.getElementById(id);el.innerHTML="<option value=''>Todos</option>";set.forEach(v=>v&& (el.innerHTML+=`<option>${v}</option>`));};
+        fill('filtroStatus',stSet);fill('filtroProduto',prSet);fill('filtroDestino',dsSet);
+        cont.innerHTML=''; d.forEach(v=>{cont.innerHTML+=`<div class='col-6 col-md-3'><div class='card p-2'><h6>${v.Frota}</h6><p>${v.Status}</p><p><b>Produto:</b> ${v.Produto}</p><p><b>Posição:</b> ${v["Posição"]}</p><p><b>Destino:</b> ${v.Destino}</p></div></div>`;});
+        atualizarMapa(d);
+      }catch(e){cont.innerHTML="<p class='text-danger text-center'>Erro ao carregar.</p>";console.error(e);}
+    }
+
+    // PRODUTIVIDADE
+    async function loadProd(){clearCharts();try{const r=await fetch(scriptURL+'?aba=produtividade');const d=await r.json();
+      let totP=0,totV=0,totF=0,totC=0;const drvP={},drvF={};
+      d.forEach(x=>{const m=x.MOTORISTA||x.Motorista;const p=toNum(x['PESO CARREGADO (TON)']);const v=toNum(x['VIAGEM']);const f=toNum(x['FATURAMENTO FRETE']);const c=toNum(x['COMISSÃO (12%)']);
+        drvP[m]=(drvP[m]||0)+p;drvF[m]=(drvF[m]||0)+f;totP+=p;totV+=v;totF+=f;totC+=c;});
+      document.getElementById('kpiPesoTotal').innerText=totP.toFixed(1);
+      document.getElementById('kpiViagensTotal').innerText=totV;
+      document.getElementById('kpiFatTotal').innerText=totF.toFixed(1);
+      document.getElementById('kpiComissaoTotal').innerText=totC.toFixed(1);
+      const lP=Object.keys(drvP).slice(0,10), vP=lP.map(k=>drvP[k]);
+      charts.push(new Chart(document.getElementById('chartPesoMotorista'),{type:'bar',data:{labels:lP,datasets:[{label:'Peso (ton)',data:vP}]},options:{responsive:true,maintainAspectRatio:false}}));
+      const lF=Object.keys(drvF).slice(0,10), vF=lF.map(k=>drvF[k]);
+      charts.push(new Chart(document.getElementById('chartFatMotorista'),{type:'bar',data:{labels:lF,datasets:[{label:'Faturamento',data:vF}]},options:{responsive:true,maintainAspectRatio:false}}));
+    }catch(e){console.error(e);}}
+
+    // VOLUME
+    async function loadVolume(){clearCharts();try{const r=await fetch(scriptURL+'?aba=volume');const d=await r.json();
+      const byP={},byF={};let tot=0,pSum=0,nP=0;
+      d.forEach(x=>{const prod=x.PRODUTO||x.Produto;const faz=x.FAZENDA||x.Fazenda;const vol=toNum(x['VOLUME ENTEGUE (TON)']);const pct=toNum(x['PERCENTUAL ENTREGUE']);
+        if(prod)byP[prod]=(byP[prod]||0)+vol;if(faz)byF[faz]=(byF[faz]||0)+vol;tot+=vol;if(pct){pSum+=pct;nP++;}});
+      document.getElementById('kpiVolumeTotal').innerText=tot.toFixed(1);
+      document.getElementById('kpiProdutos').innerText=Object.keys(byP).length;
+      document.getElementById('kpiFazendas').innerText=Object.keys(byF).length;
+      document.getElementById('kpiPercentMedio').innerText=nP?(pSum/nP).toFixed(1)+'%':'--';
+      const lp=Object.keys(byP).slice(0,10), vp=lp.map(k=>byP[k]);
+      charts.push(new Chart(document.getElementById('chartVolumeProduto'),{type:'bar',data:{labels:lp,datasets:[{label:'Volume',data:vp}]},options:{responsive:true,maintainAspectRatio:false}}));
+      const lf=Object.entries(byF).sort((a,b)=>b[1]-a[1]).slice(0,10);charts.push(new Chart(document.getElementById('chartVolumeFazenda'),{type:'pie',data:{labels:lf.map(x=>x[0]),datasets:[{data:lf.map(x=>x[1])}]},options:{responsive:true,maintainAspectRatio:false}}));
+    }catch(e){console.error(e);}}
+
+    // INIT
+    window.onload=()=>{ if(abaInicial==='volume'){showSection(btnV,'sectionVolume');loadVolume();} else if(abaInicial==='produtividade'){showSection(btnP,'sectionProdutividade');loadProd();} else {buscarDados();} };
+  </script>
+</body>
+</html>
