@@ -27,30 +27,65 @@
       transition: background 0.25s, color 0.25s;
     }
     body.dark-mode { background:#111; color:#eee; }
-    header { display:flex; align-items:center; gap:12px; margin-bottom:8px; }
-    .logo-fixed {
-      position: fixed;
-      left: 12px;
-      top: 12px;
-      width: 84px;
-      z-index: 1200;
-      border-radius: 8px;
-    }
-    .title-wrap { text-align:center; width:100%; }
-    h1 { margin:0; color:var(--verde-souza); font-weight:700; font-size:20px; }
-    .app-legend { text-align:center; font-size:0.95rem; color:var(--muted); margin-top:6px; }
-    .topbar { display:flex; gap:8px; justify-content:center; align-items:center; flex-wrap:wrap; margin:12px 0; }
-    .nav-btn { width:44px; height:44px; padding:0; border-radius:8px; display:flex; align-items:center; justify-content:center; }
-    .nav-btn.active { box-shadow: inset 0 3px 6px rgba(0,0,0,0.12); }
-    .btn-icon { border-radius:50%; width:40px; height:40px; display:flex; align-items:center; justify-content:center; }
 
-    .card-kpi { border-radius:10px; background:var(--card-bg); box-shadow:0 3px 10px rgba(0,0,0,0.06); padding:12px; }
+    header {
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:8px;
+      flex-wrap:wrap;
+      margin-bottom:8px;
+    }
+    .logo-left {
+      width:60px;
+      border-radius:8px;
+    }
+    .title-wrap {
+      text-align:center;
+      flex:1;
+      min-width:180px;
+    }
+    h1 { margin:0; color:var(--verde-souza); font-weight:700; font-size:22px; }
+    .app-legend { text-align:center; font-size:0.95rem; color:var(--muted); margin-top:4px; }
+    .btn-icon {
+      border-radius:50%;
+      width:40px; height:40px;
+      display:flex; align-items:center; justify-content:center;
+    }
+
+    .topbar {
+      display:flex; gap:8px; justify-content:center; align-items:center;
+      flex-wrap:wrap; margin:12px 0;
+    }
+    .nav-btn {
+      width:44px; height:44px; padding:0; border-radius:8px;
+      display:flex; align-items:center; justify-content:center;
+    }
+    .nav-btn.active { box-shadow: inset 0 3px 6px rgba(0,0,0,0.12); }
+
+    .card-kpi {
+      border-radius:10px;
+      background:var(--card-bg);
+      box-shadow:0 3px 10px rgba(0,0,0,0.06);
+      padding:12px;
+    }
     .kpi-label { font-size:0.85rem; color:var(--muted); }
-    .kpi-value { font-weight:700; color:var(--verde-souza); font-size:1.4rem; }
+    .kpi-value { font-weight:700; color:var(--verde-souza); font-size:1.3rem; }
 
     #map { height:420px; border-radius:12px; margin-bottom:12px; }
-    .truck-label { color:#fff; font-weight:600; text-shadow:0 0 4px rgba(0,0,0,0.8); font-size:12px; padding:2px 8px; border-radius:6px; background:rgba(0,0,0,0.5); }
-    .chart-card { padding:12px; border-radius:10px; background:var(--card-bg); box-shadow:0 3px 10px rgba(0,0,0,0.06); }
+    .truck-label {
+      color:#fff; font-weight:600;
+      text-shadow:0 0 4px rgba(0,0,0,0.8);
+      font-size:12px; padding:2px 6px;
+      border-radius:4px;
+      background:rgba(0,0,0,0.55);
+    }
+    .chart-card {
+      padding:12px;
+      border-radius:10px;
+      background:var(--card-bg);
+      box-shadow:0 3px 10px rgba(0,0,0,0.06);
+    }
 
     canvas { max-height:300px !important; height:300px !important; }
     .section { display:none; }
@@ -58,27 +93,22 @@
 
     .footer { text-align:center; color:var(--muted); margin-top:14px; font-size:0.85rem; }
 
-    /* small screens adjustments */
     @media (max-width:768px){
       #map { height:320px; }
-      .kpi-value { font-size:1.2rem; }
-      canvas { max-height:260px !important; height:260px !important; }
+      h1 { font-size:18px; }
+      canvas { max-height:260px !important; }
     }
   </style>
 </head>
 <body>
-  <!-- logo fixo -->
-  <img src="logo.png" class="logo-fixed" alt="Logo Souza" />
-
   <div class="container">
     <header>
-      <div style="flex:1"></div>
+      <img src="logo.png" alt="Logo Souza" class="logo-left">
       <div class="title-wrap">
         <h1>Souza Transportes</h1>
         <div id="appLegend" class="app-legend">🚛 Status da Frota em Tempo Real</div>
       </div>
-      <div style="flex:1; text-align:right">
-        <!-- botão atualizar e darkmode no topo direito -->
+      <div style="text-align:right">
         <button id="refreshBtnTop" class="btn btn-success btn-icon" title="Atualizar">🔄</button>
         <button id="darkModeTop" class="btn btn-outline-dark btn-icon" title="Modo Escuro">🌙</button>
       </div>
@@ -90,7 +120,7 @@
       <button id="btnVolume" class="btn btn-outline-primary nav-btn" title="Volume Entregue">📊</button>
     </div>
 
-    <!-- === SECTION: STATUS FROTA === -->
+    <!-- === STATUS FROTA === -->
     <div id="sectionStatus" class="section active">
       <div class="d-flex gap-2 flex-wrap mb-2">
         <select id="filtroStatus" class="form-select form-select-sm" style="width:220px"><option value="">Todos os Status</option></select>
@@ -107,30 +137,22 @@
       <div id="frotaContainer" class="row g-3 mt-2"></div>
     </div>
 
-    <!-- === SECTION: PRODUTIVIDADE === -->
+    <!-- === PRODUTIVIDADE === -->
     <div id="sectionProd" class="section">
       <div class="row g-3 mb-2">
-        <div class="col-md-3">
-          <div class="card card-kpi"><div class="kpi-label">Faturamento Total</div><div id="kpiFaturamento" class="kpi-value">--</div></div>
-        </div>
-        <div class="col-md-3">
-          <div class="card card-kpi"><div class="kpi-label">Comissão Total</div><div id="kpiComissao" class="kpi-value">--</div></div>
-        </div>
-        <div class="col-md-3">
-          <div class="card card-kpi"><div class="kpi-label">Peso Total (ton)</div><div id="kpiPesoTotal" class="kpi-value">--</div></div>
-        </div>
-        <div class="col-md-3">
-          <div class="card card-kpi"><div class="kpi-label">Viagens</div><div id="kpiViagensTotal" class="kpi-value">--</div></div>
-        </div>
+        <div class="col-md-3"><div class="card card-kpi"><div class="kpi-label">Faturamento Total</div><div id="kpiFaturamento" class="kpi-value">--</div></div></div>
+        <div class="col-md-3"><div class="card card-kpi"><div class="kpi-label">Comissão Total</div><div id="kpiComissao" class="kpi-value">--</div></div></div>
+        <div class="col-md-3"><div class="card card-kpi"><div class="kpi-label">Peso Total (ton)</div><div id="kpiPesoTotal" class="kpi-value">--</div></div></div>
+        <div class="col-md-3"><div class="card card-kpi"><div class="kpi-label">Viagens</div><div id="kpiViagensTotal" class="kpi-value">--</div></div></div>
       </div>
 
       <div class="row g-3">
         <div class="col-md-6"><div class="chart-card"><h6>Peso por Motorista</h6><canvas id="chartPesoMotorista"></canvas></div></div>
-        <div class="col-md-6"><div class="chart-card"><h6>Faturamento por Motorista</h6><canvas id="chartFatMotorista"></canvas></div></div>
+        <div class="col-md-6"><div class="chart-card"><h6>Comissão por Motorista</h6><canvas id="chartComissaoMotorista"></canvas></div></div>
       </div>
     </div>
 
-    <!-- === SECTION: VOLUME ENTREGUE === -->
+    <!-- === VOLUME ENTREGUE === -->
     <div id="sectionVolume" class="section">
       <div class="row g-3 mb-2">
         <div class="col-md-4"><div class="card card-kpi"><div class="kpi-label">Volume Total (ton)</div><div id="kpiVolumeTotal" class="kpi-value">--</div></div></div>
@@ -147,322 +169,386 @@
     <div class="footer">© 2025 Souza Transportes</div>
   </div>
 
-  <script>
-    /********** CONFIG **********/
-    const scriptURL = "https://script.google.com/macros/s/AKfycbyZDvHD4CCG4xAbuIjckNApANUkDow8uifF96C1R5DRKd4soQJVZKvNoWJ6hLDPyc5n/exec";
-    const fmtBRL_noCents = v => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL', maximumFractionDigits: 0 }).format(Math.round(v));
-    const fmtNumber = v => (typeof v === 'number') ? v.toLocaleString('pt-BR', { maximumFractionDigits: 1 }) : v;
-    let map, markers = [], labels = [], dadosFrota = [], charts = [];
+<!-- === SCRIPT inicia aqui === -->
+<script>
+// -------------- Parte 2/2: JavaScript --------------
+const scriptURL = "https://script.google.com/macros/s/AKfycbyZDvHD4CCG4xAbuIjckNApANUkDow8uifF96C1R5DRKd4soQJVZKvNoWJ6hLDPyc5n/exec";
 
-    // parse URL param for initial aba
-    const params = new URLSearchParams(window.location.search);
-    const abaParam = (params.get('aba')||'status').toLowerCase();
+let map, markers = [], labelMarkers = [], dadosFrota = [], charts = [];
 
-    // helpers
-    function toNumber(v){
-      if(v === null || v === undefined) return 0;
-      if(typeof v === 'number') return v;
-      const s = String(v).replace(/\./g,'').replace(/,/g,'.').replace(/[^\d\.\-]/g,'');
-      const n = parseFloat(s);
-      return isNaN(n) ? 0 : n;
-    }
-    function clearCharts(){ charts.forEach(c=>{ try{ c.destroy(); }catch(e){} }); charts = []; }
+// small formatters
+const fmtBRL_noCents = v => new Intl.NumberFormat('pt-BR',{style:'currency',currency:'BRL',maximumFractionDigits:0}).format(Math.round(v));
+const fmtNum1 = v => (typeof v === 'number' ? v.toLocaleString('pt-BR',{maximumFractionDigits:1}) : v);
 
-    /********** UI refs **********/
-    const btnStatus = document.getElementById('btnStatus');
-    const btnProd = document.getElementById('btnProd');
-    const btnVolume = document.getElementById('btnVolume');
-    const refreshBtnTop = document.getElementById('refreshBtnTop');
-    const darkModeTop = document.getElementById('darkModeTop');
-    const appLegend = document.getElementById('appLegend');
+// ---- Helpers ----
+function toNumber(v){
+  if(v === null || v === undefined) return 0;
+  if(typeof v === 'number') return v;
+  const s = String(v).replace(/\./g,'').replace(/,/g,'.').replace(/[^\d\.\-]/g,'');
+  const n = parseFloat(s);
+  return isNaN(n) ? 0 : n;
+}
+function clearCharts(){ charts.forEach(c => { try{ c.destroy(); }catch(e){} }); charts = []; }
+function clearMap(){
+  markers.forEach(m => { try{ map.removeLayer(m); }catch(e){} });
+  labelMarkers.forEach(l => { try{ map.removeLayer(l); }catch(e){} });
+  markers = []; labelMarkers = [];
+}
 
-    function setLegendFor(aba){
-      if(aba==='status') appLegend.innerText = "🚛 Status da Frota em Tempo Real";
-      if(aba==='prod') appLegend.innerText = "📈 Painel de Produtividade";
-      if(aba==='volume') appLegend.innerText = "📊 Relatório de Volume Entregue";
-    }
+// ---- Map init (Esri Satélite + OSM labels) ----
+function initMap(){
+  if(map) return;
+  const esriSat = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', { maxZoom: 20, attribution: 'Esri World Imagery' });
+  const osmLabels = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19, attribution: '© OpenStreetMap' });
 
-    function activateTab(btn, sectionId, abaKey){
-      document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('active'));
-      btn.classList.add('active');
-      document.querySelectorAll('.section').forEach(s=>s.classList.remove('active'));
-      document.getElementById(sectionId).classList.add('active');
-      setLegendFor(abaKey);
-    }
+  map = L.map('map', { fullscreenControl: true, preferCanvas: true }).setView([-15.78, -47.93], 5);
+  // add both: satellite base + labels overlay to create hybrid effect
+  const hybridGroup = L.layerGroup([esriSat, osmLabels]);
+  hybridGroup.addTo(map);
 
-    btnStatus.addEventListener('click', ()=>{ activateTab(btnStatus,'sectionStatus','status'); buscarDados(); });
-    btnProd.addEventListener('click', ()=>{ activateTab(btnProd,'sectionProd','prod'); loadProdutividade(); });
-    btnVolume.addEventListener('click', ()=>{ activateTab(btnVolume,'sectionVolume','volume'); loadVolume(); });
-    refreshBtnTop.addEventListener('click', ()=>{ if(document.getElementById('sectionStatus').classList.contains('active')) buscarDados(); else if(document.getElementById('sectionProd').classList.contains('active')) loadProdutividade(); else loadVolume(); });
-    darkModeTop.addEventListener('click', ()=> document.body.classList.toggle('dark-mode'));
+  const osm = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png');
+  L.control.layers({ "🛰 Satélite (com rótulos)": hybridGroup, "🗺 OpenStreetMap": osm }).addTo(map);
+}
 
-    /********** MAP **********/
-    function initMap(){
-      if(map) return;
-      // Satellite (Esri) + OSM labels overlay
-      const esriSat = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', { maxZoom: 20, attribution: 'Esri' });
-      const osmLabels = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19, attribution: '© OpenStreetMap' });
+// ---- Truck icon + label ----
+function getTruckDivIcon(){
+  // small emoji icon (keeps charset). Could use SVG for better control.
+  return L.divIcon({ className: 'truck-emoji', html: `<div style="font-size:20px;">🚛</div>`, iconSize:[28,28], iconAnchor:[14,14] });
+}
+function addTruck(lat, lon, name, status, id){
+  const color = (status||'').toLowerCase().includes('carregado') ? 'green' : (status||'').toLowerCase().includes('descarregando') ? 'orange' : 'red';
+  const icon = getTruckDivIcon();
+  const marker = L.marker([lat, lon], { icon }).addTo(map);
+  marker.bindPopup(`<b>${name}</b><br>${status || '-'}`);
+  marker._truckId = id;
+  markers.push(marker);
 
-      map = L.map('map', { fullscreenControl: true }).setView([-15.78, -47.93], 5);
-      esriSat.addTo(map);
-      osmLabels.addTo(map); // OSM labels on top for roads/cities
+  // label (divIcon) with name, slightly offset to right
+  const labelIcon = L.divIcon({ className: 'truck-label', html: name, iconSize:[120,20], iconAnchor:[-10,-10] });
+  const labelMarker = L.marker([lat,lon], { icon: labelIcon, interactive:false }).addTo(map);
+  labelMarkers.push(labelMarker);
+  return marker;
+}
 
-      // Layer control to allow switching
-      const osm = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png');
-      const hybridGroup = L.layerGroup([esriSat, osmLabels]);
-      const baseMaps = { "🛰 Satélite (com rótulos)": hybridGroup, "🗺 OpenStreetMap": osm };
-      L.control.layers(baseMaps).addTo(map);
-    }
+// focus truck on map by truck name or index
+function focusTruckByName(name){
+  // find first marker with popup content including name
+  const m = markers.find(mk => mk.getPopup && mk.getPopup().getContent().includes(name));
+  if(m){
+    try{ map.setView(m.getLatLng(), 12, { animate:true }); m.openPopup(); }catch(e){}
+  }
+}
+function focusTruckByCoords(lat, lon){
+  try{ map.setView([lat, lon], 12, { animate:true }); }catch(e){}
+}
 
-    function getTruckIcon(color){
-      return L.divIcon({ className: "truck-marker", html: `<div style="font-size:20px;">🚛</div>`, iconSize:[24,24], iconAnchor:[12,12] });
-    }
+// ---- Fetch & render Frota ----
+async function buscarDados(){
+  initMap();
+  clearMap();
+  const cont = document.getElementById('frotaContainer');
+  cont.innerHTML = "<p class='text-center text-muted'>🔄 Carregando frota...</p>";
+  try{
+    const resp = await fetch(`${scriptURL}?aba=status&t=${Date.now()}`);
+    const data = await resp.json();
+    dadosFrota = data || [];
 
-    function addTruckMarker(lat, lon, nome, status){
-      const color = (status||'').toLowerCase().includes('carregado') ? 'green' : (status||'').toLowerCase().includes('descarregando') ? 'orange' : 'red';
-      const marker = L.marker([lat,lon], { icon: getTruckIcon(color) }).addTo(map);
-      marker.bindPopup(`<b>${nome}</b><br>${status || '-'} `);
-      markers.push(marker);
-      // label with name to the right (use divIcon)
-      const labelIcon = L.divIcon({ className: 'truck-label', html: nome, iconSize: [120,20], iconAnchor: [-10, -10] });
-      const labelMarker = L.marker([lat,lon], { icon: labelIcon, interactive: false }).addTo(map);
-      labels.push(labelMarker);
-    }
+    // resumo
+    const total = dadosFrota.length;
+    const carreg = dadosFrota.filter(x => (x.Status||'').toLowerCase().includes('carregado')).length;
+    const descar = dadosFrota.filter(x => (x.Status||'').toLowerCase().includes('descarregando')).length;
+    const vazios = total - carreg - descar;
+    document.getElementById('resumoTexto').innerHTML = `Total: <b>${total}</b> | Carregados: <b style="color:green">${carreg}</b> | Descarregando: <b style="color:orange">${descar}</b> | Vazios: <b style="color:red">${vazios}</b>`;
 
-    function clearMapMarkers(){
-      markers.forEach(m=>map.removeLayer(m)); markers=[];
-      labels.forEach(l=>map.removeLayer(l)); labels=[];
-    }
-
-    /********** FROTA (Status) **********/
-    async function buscarDados(){
-      initMap();
-      clearMapMarkers();
-      const cont = document.getElementById('frotaContainer');
-      cont.innerHTML = "<p class='text-center text-muted'>🔄 Carregando frota...</p>";
-      try{
-        const resp = await fetch(`${scriptURL}?aba=status&t=${Date.now()}`);
-        const data = await resp.json();
-        dadosFrota = data || [];
-        // resumo
-        const total = dadosFrota.length;
-        const carreg = dadosFrota.filter(x => (x.Status||'').toLowerCase().includes('carregado')).length;
-        const descar = dadosFrota.filter(x => (x.Status||'').toLowerCase().includes('descarregando')).length;
-        const vazios = total - carreg - descar;
-        document.getElementById('resumoTexto').innerHTML = `Total: <b>${total}</b> | Carregados: <b style="color:green">${carreg}</b> | Descarregando: <b style="color:orange">${descar}</b> | Vazios: <b style="color:red">${vazios}</b>`;
-
-        // preencher filtros (Status, Produto, Destino)
-        const setStatus = new Set(), setProduto = new Set(), setDestino = new Set();
-        dadosFrota.forEach(r => { setStatus.add(r.Status); setProduto.add(r.Produto); setDestino.add(r.Destino); });
-        const fill = (id, set) => {
-          const el = document.getElementById(id);
-          el.innerHTML = `<option value="">Todos</option>`;
-          Array.from(set).forEach(v => { if(v) el.innerHTML += `<option value="${v}">${v}</option>`; });
-        };
-        fill('filtroStatus', setStatus); fill('filtroProduto', setProduto); fill('filtroDestino', setDestino);
-
-        // render cards and markers
-        cont.innerHTML = '';
-        const groupMarkers = [];
-        for(const r of dadosFrota){
-          const posName = r["Posição"] || r.Posicao || '';
-          let lat = parseFloat(r.Latitude), lon = parseFloat(r.Longitude);
-          if(isNaN(lat) || isNaN(lon)){
-            // if lat/lon missing, try geocode via Nominatim (light; optional)
-            // skip geocoding here for speed; you can pre-fill lat/lon in sheet
-          } else {
-            addTruckMarker(lat, lon, r.Frota || r.frota || '—', r.Status || '');
-            groupMarkers.push(L.marker([lat,lon]));
-          }
-
-          cont.innerHTML += `<div class="col-6 col-md-3"><div class="card p-2"><h6>${r.Frota||'—'}</h6><p class="small text-muted mb-1">${r.Status||'-'}</p><p class="mb-0"><strong>Produto:</strong> ${r.Produto||'-'}</p><p class="mb-0"><strong>Posição:</strong> ${posName||'-'}</p><p class="mb-0"><strong>Destino:</strong> ${r.Destino||'-'}</p></div></div>`;
-        }
-
-        // fit bounds
-        try{
-          if(groupMarkers.length){
-            const fg = L.featureGroup(groupMarkers);
-            map.fitBounds(fg.getBounds(), { padding: [60, 60] });
-          }
-        }catch(e){ console.warn(e); }
-
-      }catch(err){
-        cont.innerHTML = "<p class='text-danger text-center'>Erro ao carregar frota.</p>";
-        console.error(err);
-      }
-    }
-
-    // apply simple filters (client-side)
-    document.getElementById('filtroStatus').addEventListener('change', aplicarFiltros);
-    document.getElementById('filtroProduto').addEventListener('change', aplicarFiltros);
-    document.getElementById('filtroDestino').addEventListener('change', aplicarFiltros);
-
-    function aplicarFiltros(){
-      const fStatus = document.getElementById('filtroStatus').value.toLowerCase();
-      const fProduto = document.getElementById('filtroProduto').value.toLowerCase();
-      const fDestino = document.getElementById('filtroDestino').value.toLowerCase();
-      const filtrados = dadosFrota.filter(v => 
-        (!fStatus || (v.Status||'').toLowerCase().includes(fStatus)) &&
-        (!fProduto || (v.Produto||'').toLowerCase().includes(fProduto)) &&
-        (!fDestino || (v.Destino||'').toLowerCase().includes(fDestino))
-      );
-      // re-render simple list and markers
-      // clear markers
-      clearMapMarkers();
-      const cont = document.getElementById('frotaContainer'); cont.innerHTML = '';
-      const groupMarkers = [];
-      filtrados.forEach(r => {
-        cont.innerHTML += `<div class="col-6 col-md-3"><div class="card p-2"><h6>${r.Frota||'—'}</h6><p class="small text-muted mb-1">${r.Status||'-'}</p><p class="mb-0"><strong>Produto:</strong> ${r.Produto||'-'}</p><p class="mb-0"><strong>Posição:</strong> ${r["Posição"]||'-'}</p><p class="mb-0"><strong>Destino:</strong> ${r.Destino||'-'}</p></div></div>`;
-        const lat = parseFloat(r.Latitude), lon = parseFloat(r.Longitude);
-        if(!isNaN(lat) && !isNaN(lon)){ addTruckMarker(lat, lon, r.Frota||'—', r.Status||''); groupMarkers.push(L.marker([lat,lon])); }
-      });
-      if(groupMarkers.length){ try{ map.fitBounds(L.featureGroup(groupMarkers).getBounds(), {padding:[60,60]}); }catch(e){} }
-    }
-
-    /********** PRODUTIVIDADE **********/
-    async function loadProdutividade(){
-      clearCharts();
-      document.getElementById('kpiFaturamento').innerText = 'Carregando...';
-      try{
-        const resp = await fetch(`${scriptURL}?aba=produtividade&t=${Date.now()}`);
-        const data = await resp.json();
-        // aggregate
-        const byDriverPeso = {}, byDriverFat = {};
-        let totalPeso=0, totalViagens=0, totalFat=0, totalComissao=0;
-        data.forEach(r => {
-          const motorista = r.MOTORISTA || r.Motorista || r.motorista || '—';
-          const peso = toNumber(r['PESO CARREGADO (TON)'] || r['PESO CARREGADO'] || r.PESO || 0);
-          const viagem = toNumber(r['VIAGEM'] || r.VIAGEM || 0);
-          const fat = toNumber(r['FATURAMENTO FRETE'] || r['FATURAMENTO'] || 0);
-          const com = toNumber(r['COMISSÃO (12%)'] || r['COMISSAO'] || r.COMISSAO || 0);
-          byDriverPeso[motorista] = (byDriverPeso[motorista]||0) + peso;
-          byDriverFat[motorista] = (byDriverFat[motorista]||0) + fat;
-          totalPeso += peso; totalViagens += viagem; totalFat += fat; totalComissao += com;
-        });
-
-        // KPIs (faturamento/comissão in BRL without decimals)
-        document.getElementById('kpiFaturamento').innerText = fmtBRL_noCents(totalFat);
-        document.getElementById('kpiComissao').innerText = fmtBRL_noCents(totalComissao);
-        document.getElementById('kpiPesoTotal').innerText = totalPeso.toFixed(1);
-        document.getElementById('kpiViagensTotal').innerText = totalViagens;
-
-        // Charts: use horizontal bars for better mobile view (indexAxis: 'y')
-        const driversPesoSorted = Object.entries(byDriverPeso).sort((a,b)=>b[1]-a[1]).slice(0,12);
-        const labelsPeso = driversPesoSorted.map(p=>p[0]);
-        const dataPeso = driversPesoSorted.map(p=>p[1]);
-
-        const ctxPeso = document.getElementById('chartPesoMotorista').getContext('2d');
-        charts.push(new Chart(ctxPeso, {
-          type: 'bar',
-          data: { labels: labelsPeso, datasets: [{ label: 'Peso (ton)', data: dataPeso, backgroundColor: 'rgba(46,125,50,0.6)' }] },
-          options: {
-            indexAxis: 'y',
-            responsive:true, maintainAspectRatio:false,
-            plugins: { legend:{ display:false }, datalabels: { anchor: 'end', align: 'right', formatter: v => v.toLocaleString('pt-BR',{maximumFractionDigits:1}) } },
-            scales:{ x:{ beginAtZero:true } }
-          },
-          plugins: [ChartDataLabels]
-        }));
-
-        // Faturamento chart (scale adjust)
-        const driversFatSorted = Object.entries(byDriverFat).sort((a,b)=>b[1]-a[1]).slice(0,12);
-        const labelsFat = driversFatSorted.map(p=>p[0]);
-        const dataFat = driversFatSorted.map(p=>p[1]);
-
-        // determine suggestedMax for scale (20% margin)
-        const maxFat = dataFat.length ? Math.max(...dataFat) : 0;
-        const suggestedMax = Math.ceil(maxFat * 1.2);
-
-        const ctxFat = document.getElementById('chartFatMotorista').getContext('2d');
-        charts.push(new Chart(ctxFat, {
-          type: 'bar',
-          data: { labels: labelsFat, datasets: [{ label: 'Faturamento (R$)', data: dataFat, backgroundColor: 'rgba(3,169,244,0.6)' }] },
-          options: {
-            indexAxis: 'y',
-            responsive:true, maintainAspectRatio:false,
-            plugins: { legend:{ display:false }, datalabels: { anchor:'end', align:'right', formatter: v => new Intl.NumberFormat('pt-BR',{style:'currency',currency:'BRL',maximumFractionDigits:0}).format(Math.round(v)) } },
-            scales: { x: { beginAtZero:true, suggestedMax: suggestedMax } }
-          },
-          plugins: [ChartDataLabels]
-        }));
-
-      }catch(e){
-        console.error('Erro Produtividade', e);
-      }
-    }
-
-    /********** VOLUME ENTREGUE **********/
-    async function loadVolume(){
-      clearCharts();
-      try{
-        const resp = await fetch(`${scriptURL}?aba=volume&t=${Date.now()}`);
-        const data = await resp.json();
-        // aggregate
-        const byProduct = {}, byFazenda = {};
-        let totalVol = 0;
-        data.forEach(r => {
-          const prod = r.PRODUTO || r.Produto || r.produto || '';
-          const faz = r.FAZENDA || r.Fazenda || r.fazenda || '';
-          const vol = toNumber(r['VOLUME ENTEGUE (TON)'] || r['VOLUME ENTREGUE (TON)'] || r['VOLUME'] || 0);
-          if(prod) byProduct[prod] = (byProduct[prod]||0) + vol;
-          if(faz) byFazenda[faz] = (byFazenda[faz]||0) + vol;
-          totalVol += vol;
-        });
-
-        // KPIs
-        document.getElementById('kpiVolumeTotal').innerText = totalVol.toFixed(1);
-        document.getElementById('kpiProdutos').innerText = Object.keys(byProduct).length;
-        document.getElementById('kpiFazendas').innerText = Object.keys(byFazenda).length;
-
-        // Chart Volume por Produto (horizontal)
-        const prodPairs = Object.entries(byProduct).sort((a,b)=>b[1]-a[1]).slice(0,10);
-        const prodLabels = prodPairs.map(p=>p[0]);
-        const prodData = prodPairs.map(p=>p[1]);
-        const ctxVP = document.getElementById('chartVolumeProduto').getContext('2d');
-        charts.push(new Chart(ctxVP, {
-          type: 'bar',
-          data: { labels: prodLabels, datasets: [{ label: 'Volume (ton)', data: prodData, backgroundColor: 'rgba(46,125,50,0.6)' }] },
-          options: {
-            indexAxis: 'y',
-            responsive:true, maintainAspectRatio:false,
-            plugins: { legend:{ display:false }, datalabels: { anchor:'end', align:'right', formatter: v => v.toLocaleString('pt-BR',{maximumFractionDigits:1}) } },
-            scales: { x:{ beginAtZero:true } }
-          },
-          plugins: [ChartDataLabels]
-        }));
-
-        // Chart Fazendas (pie) with labels
-        const fazPairs = Object.entries(byFazenda).sort((a,b)=>b[1]-a[1]).slice(0,8);
-        const fazLabels = fazPairs.map(p=>p[0]);
-        const fazData = fazPairs.map(p=>p[1]);
-        const ctxFaz = document.getElementById('chartVolumeFazenda').getContext('2d');
-        charts.push(new Chart(ctxFaz, {
-          type: 'pie',
-          data: { labels: fazLabels, datasets: [{ data: fazData, backgroundColor: ['#42a5f5','#ff6384','#66bb6a','#ffa726','#ab47bc','#26c6da','#ffeb3b','#8d6e63'] }] },
-          options: {
-            responsive:true, maintainAspectRatio:false,
-            plugins: { legend:{ position:'bottom' }, datalabels: { formatter: (v,ctx) => v.toLocaleString('pt-BR',{maximumFractionDigits:1}), color:'#fff' } }
-          },
-          plugins: [ChartDataLabels]
-        }));
-
-      }catch(e){
-        console.error('Erro Volume', e);
-      }
-    }
-
-    /********** INIT **********/
-    window.onload = () => {
-      // Show correct tab based on URL param
-      if(abaParam === 'produtividade' || abaParam === 'prod') { activateTab(btnProd,'sectionProd','prod'); loadProdutividade(); }
-      else if(abaParam === 'volume') { activateTab(btnVolume,'sectionVolume','volume'); loadVolume(); }
-      else { activateTab(btnStatus,'sectionStatus','status'); buscarDados(); }
-
-      // Register service worker if exists
-      if('serviceWorker' in navigator){
-        navigator.serviceWorker.register('./service-worker.js').then(()=>console.log('SW registrado')).catch(()=>{});
-      }
+    // fill filters
+    const setStatus = new Set(), setProduto = new Set(), setDestino = new Set();
+    dadosFrota.forEach(r => { setStatus.add(r.Status); setProduto.add(r.Produto); setDestino.add(r.Destino); });
+    const fill = (id, set) => {
+      const el = document.getElementById(id);
+      el.innerHTML = `<option value="">Todos</option>`;
+      Array.from(set).forEach(v => { if(v) el.innerHTML += `<option value="${v}">${v}</option>`; });
     };
-  </script>
+    fill('filtroStatus', setStatus); fill('filtroProduto', setProduto); fill('filtroDestino', setDestino);
+
+    // render cards + markers
+    cont.innerHTML = '';
+    const group = [];
+    dadosFrota.forEach((r, idx) => {
+      const nome = r.Frota || r.frota || `Veículo ${idx+1}`;
+      const lat = parseFloat(r.Latitude);
+      const lon = parseFloat(r.Longitude);
+      const status = r.Status || '';
+      // card with Map button
+      cont.innerHTML += `<div class="col-6 col-md-3">
+        <div class="card p-2">
+          <h6>${nome}</h6>
+          <p class="small text-muted mb-1">${status}</p>
+          <p class="mb-0"><strong>Produto:</strong> ${r.Produto||'-'}</p>
+          <p class="mb-0"><strong>Posição:</strong> ${r["Posição"]||'-'}</p>
+          <p class="mb-0"><strong>Destino:</strong> ${r.Destino||'-'}</p>
+          <div class="d-flex gap-2 mt-2">
+            <button class="btn btn-sm btn-outline-success btn-map" data-lat="${lat||''}" data-lon="${lon||''}" data-name="${nome}">📍 Mapa</button>
+          </div>
+        </div>
+      </div>`;
+
+      // add marker if lat/lon present
+      if(!isNaN(lat) && !isNaN(lon)){
+        addTruck(lat, lon, nome, status, idx);
+        group.push(L.marker([lat, lon]));
+      }
+    });
+
+    // cluster/bounds
+    try{
+      if(group.length){
+        const fg = L.featureGroup(group);
+        map.fitBounds(fg.getBounds(), { padding: [60,60] });
+      }
+    }catch(e){ console.warn(e); }
+
+    // attach click handlers to map buttons
+    document.querySelectorAll('.btn-map').forEach(btn => {
+      btn.addEventListener('click', (ev) => {
+        const lat = parseFloat(btn.getAttribute('data-lat'));
+        const lon = parseFloat(btn.getAttribute('data-lon'));
+        const name = btn.getAttribute('data-name');
+        if(!isNaN(lat) && !isNaN(lon)){
+          focusTruckByCoords(lat, lon);
+        } else {
+          // fallback: focus by name
+          focusTruckByName(name);
+        }
+      });
+    });
+
+  }catch(err){
+    cont.innerHTML = "<p class='text-danger text-center'>Erro ao carregar frota.</p>";
+    console.error(err);
+  }
+}
+
+// ---- Filters ----
+document.getElementById('filtroStatus').addEventListener('change', aplicarFiltros);
+document.getElementById('filtroProduto').addEventListener('change', aplicarFiltros);
+document.getElementById('filtroDestino').addEventListener('change', aplicarFiltros);
+
+function aplicarFiltros(){
+  const fStatus = document.getElementById('filtroStatus').value.toLowerCase();
+  const fProduto = document.getElementById('filtroProduto').value.toLowerCase();
+  const fDestino = document.getElementById('filtroDestino').value.toLowerCase();
+  // filter data
+  const filtrados = dadosFrota.filter(v =>
+    (!fStatus || (v.Status||'').toLowerCase().includes(fStatus)) &&
+    (!fProduto || (v.Produto||'').toLowerCase().includes(fProduto)) &&
+    (!fDestino || (v.Destino||'').toLowerCase().includes(fDestino))
+  );
+
+  // re-render cards and markers
+  const cont = document.getElementById('frotaContainer');
+  cont.innerHTML = '';
+  clearMap();
+  const group = [];
+  filtrados.forEach((r, idx) => {
+    const nome = r.Frota || r.frota || `Veículo ${idx+1}`;
+    const lat = parseFloat(r.Latitude);
+    const lon = parseFloat(r.Longitude);
+    const status = r.Status || '';
+    cont.innerHTML += `<div class="col-6 col-md-3">
+      <div class="card p-2">
+        <h6>${nome}</h6>
+        <p class="small text-muted mb-1">${status}</p>
+        <p class="mb-0"><strong>Produto:</strong> ${r.Produto||'-'}</p>
+        <p class="mb-0"><strong>Posição:</strong> ${r["Posição"]||'-'}</p>
+        <p class="mb-0"><strong>Destino:</strong> ${r.Destino||'-'}</p>
+        <div class="d-flex gap-2 mt-2">
+          <button class="btn btn-sm btn-outline-success btn-map" data-lat="${lat||''}" data-lon="${lon||''}" data-name="${nome}">📍 Mapa</button>
+        </div>
+      </div>
+    </div>`;
+    if(!isNaN(lat) && !isNaN(lon)){ addTruck(lat, lon, nome, status, idx); group.push(L.marker([lat,lon])); }
+  });
+
+  // reattach handlers
+  document.querySelectorAll('.btn-map').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const lat = parseFloat(btn.getAttribute('data-lat'));
+      const lon = parseFloat(btn.getAttribute('data-lon'));
+      const name = btn.getAttribute('data-name');
+      if(!isNaN(lat) && !isNaN(lon)) focusTruckByCoords(lat, lon);
+      else focusTruckByName(name);
+    });
+  });
+
+  if(group.length){
+    try{ map.fitBounds(L.featureGroup(group).getBounds(), { padding:[60,60] }); }catch(e){}
+  }
+}
+
+// ---- PRODUTIVIDADE: Comissão por motorista, primeiro nome ----
+async function loadProdutividade(){
+  clearCharts();
+  document.getElementById('kpiFaturamento').innerText = 'Carregando...';
+  try{
+    const resp = await fetch(`${scriptURL}?aba=produtividade&t=${Date.now()}`);
+    const data = await resp.json() || [];
+    const byDriverCom = {}, byDriverPeso = {};
+    let totalFat = 0, totalCom = 0, totalPeso = 0, totalViagens = 0;
+
+    data.forEach(r => {
+      const motoristaFull = r.MOTORISTA || r.Motorista || r.motorista || '—';
+      const firstName = String(motoristaFull).split(' ')[0] || motoristaFull;
+      const peso = toNumber(r['PESO CARREGADO (TON)'] || r['PESO CARREGADO'] || r.PESO || 0);
+      const viagem = toNumber(r['VIAGEM'] || r.VIAGEM || 0);
+      const fat = toNumber(r['FATURAMENTO FRETE'] || r['FATURAMENTO'] || r.FATURAMENTO || 0);
+      const com = toNumber(r['COMISSÃO (12%)'] || r['COMISSÃO'] || r.COMISSAO || 0);
+
+      byDriverPeso[firstName] = (byDriverPeso[firstName]||0) + peso;
+      byDriverCom[firstName] = (byDriverCom[firstName]||0) + com;
+
+      totalPeso += peso; totalViagens += viagem; totalFat += fat; totalCom += com;
+    });
+
+    // KPIs formatted
+    document.getElementById('kpiFaturamento').innerText = fmtBRL_noCents(totalFat);
+    document.getElementById('kpiComissao').innerText = fmtBRL_noCents(totalCom);
+    document.getElementById('kpiPesoTotal').innerText = totalPeso.toFixed(1);
+    document.getElementById('kpiViagensTotal').innerText = totalViagens;
+
+    // Peso chart (horizontal)
+    const pesoPairs = Object.entries(byDriverPeso).sort((a,b)=>b[1]-a[1]).slice(0,12);
+    const pesoLabels = pesoPairs.map(p=>p[0]);
+    const pesoData = pesoPairs.map(p=>p[1]);
+    const ctxP = document.getElementById('chartPesoMotorista').getContext('2d');
+    charts.push(new Chart(ctxP, {
+      type: 'bar',
+      data: { labels: pesoLabels, datasets: [{ label:'Peso (ton)', data: pesoData, backgroundColor:'rgba(46,125,50,0.7)' }] },
+      options: {
+        indexAxis:'y', responsive:true, maintainAspectRatio:false,
+        plugins:{ legend:{ display:false }, datalabels:{ anchor:'end', align:'right', formatter: v => v.toLocaleString('pt-BR',{maximumFractionDigits:1}) } },
+        scales:{ x:{ beginAtZero:true } }
+      },
+      plugins:[ChartDataLabels]
+    }));
+
+    // Comissão chart (horizontal) - use reasonable suggestedMax
+    const comPairs = Object.entries(byDriverCom).sort((a,b)=>b[1]-a[1]).slice(0,12);
+    const comLabels = comPairs.map(p=>p[0]);
+    const comData = comPairs.map(p=>p[1]);
+    const maxCom = comData.length ? Math.max(...comData) : 0;
+    const sugMax = Math.ceil(maxCom * 1.2);
+
+    const ctxC = document.getElementById('chartComissaoMotorista').getContext('2d');
+    charts.push(new Chart(ctxC, {
+      type:'bar',
+      data:{ labels:comLabels, datasets:[{ label:'Comissão (R$)', data:comData, backgroundColor:'rgba(255,152,0,0.75)' }] },
+      options:{
+        indexAxis:'y', responsive:true, maintainAspectRatio:false,
+        plugins:{ legend:{ display:false }, datalabels:{ anchor:'end', align:'right', formatter: v => fmtBRL_noCents(v) } },
+        scales:{ x:{ beginAtZero:true, suggestedMax: sugMax } }
+      },
+      plugins:[ChartDataLabels]
+    }));
+
+  }catch(e){
+    console.error('Erro produtividade', e);
+  }
+}
+
+// ---- VOLUME ENTREGUE ----
+async function loadVolume(){
+  clearCharts();
+  try{
+    const resp = await fetch(`${scriptURL}?aba=volume&t=${Date.now()}`);
+    const data = await resp.json() || [];
+
+    const byProd = {}, byFaz = {}, totalVolObj = { total:0 };
+    data.forEach(r => {
+      const prod = r.PRODUTO || r.Produto || r.produto || '';
+      const faz = r.FAZENDA || r.Fazenda || r.fazenda || '';
+      const vol = toNumber(r['VOLUME ENTEGUE (TON)'] || r['VOLUME ENTREGUE (TON)'] || r.VOLUME || 0);
+      if(prod) byProd[prod] = (byProd[prod]||0) + vol;
+      if(faz) byFaz[faz] = (byFaz[faz]||0) + vol;
+      totalVolObj.total += vol;
+    });
+
+    // KPIs
+    document.getElementById('kpiVolumeTotal').innerText = totalVolObj.total.toFixed(1);
+    document.getElementById('kpiProdutos').innerText = Object.keys(byProd).length;
+    document.getElementById('kpiFazendas').innerText = Object.keys(byFaz).length;
+
+    // Volume por produto (horizontal)
+    const prodPairs = Object.entries(byProd).sort((a,b)=>b[1]-a[1]).slice(0,10);
+    const prodLabels = prodPairs.map(p=>p[0]); const prodData = prodPairs.map(p=>p[1]);
+    const ctxVP = document.getElementById('chartVolumeProduto').getContext('2d');
+    charts.push(new Chart(ctxVP, {
+      type:'bar',
+      data:{ labels:prodLabels, datasets:[{ label:'Volume (ton)', data:prodData, backgroundColor:'rgba(46,125,50,0.7)' }] },
+      options:{
+        indexAxis:'y', responsive:true, maintainAspectRatio:false,
+        plugins:{ legend:{ display:false }, datalabels:{ anchor:'end', align:'right', formatter: v => v.toLocaleString('pt-BR',{maximumFractionDigits:1}) } },
+        scales:{ x:{ beginAtZero:true } }
+      },
+      plugins:[ChartDataLabels]
+    }));
+
+    // Top fazendas pie with labels
+    const fazPairs = Object.entries(byFaz).sort((a,b)=>b[1]-a[1]).slice(0,8);
+    const fazLabels = fazPairs.map(p=>p[0]); const fazData = fazPairs.map(p=>p[1]);
+    const ctxFaz = document.getElementById('chartVolumeFazenda').getContext('2d');
+    charts.push(new Chart(ctxFaz, {
+      type:'pie',
+      data:{ labels: fazLabels, datasets:[{ data: fazData, backgroundColor:['#42a5f5','#ff6384','#66bb6a','#ffa726','#ab47bc','#26c6da','#ffeb3b','#8d6e63'] }] },
+      options:{ responsive:true, maintainAspectRatio:false, plugins:{ legend:{ position:'bottom' }, datalabels:{ formatter: v => v.toLocaleString('pt-BR',{maximumFractionDigits:1}), color:'#fff' } } },
+      plugins:[ChartDataLabels]
+    }));
+
+  }catch(e){
+    console.error('Erro volume', e);
+  }
+}
+
+// ---- UI: Tab activation & initial load ----
+const btnStatus = document.getElementById('btnStatus');
+const btnProd = document.getElementById('btnProd');
+const btnVolume = document.getElementById('btnVolume');
+const refreshBtnTop = document.getElementById('refreshBtnTop');
+const darkModeTop = document.getElementById('darkModeTop');
+const appLegend = document.getElementById('appLegend');
+
+function setLegend(key){
+  if(key === 'status') appLegend.innerText = "🚛 Status da Frota em Tempo Real";
+  if(key === 'prod') appLegend.innerText = "📈 Painel de Produtividade";
+  if(key === 'volume') appLegend.innerText = "📊 Relatório de Volume Entregue";
+}
+function activateTab(btn, sectionId, key){
+  document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  document.querySelectorAll('.section').forEach(s=>s.classList.remove('active'));
+  document.getElementById(sectionId).classList.add('active');
+  setLegend(key);
+}
+
+btnStatus.addEventListener('click', ()=>{ activateTab(btnStatus,'sectionStatus','status'); buscarDados(); });
+btnProd.addEventListener('click', ()=>{ activateTab(btnProd,'sectionProd','prod'); loadProdutividade(); });
+btnVolume.addEventListener('click', ()=>{ activateTab(btnVolume,'sectionVolume','volume'); loadVolume(); });
+refreshBtnTop.addEventListener('click', ()=>{ if(document.getElementById('sectionStatus').classList.contains('active')) buscarDados(); else if(document.getElementById('sectionProd').classList.contains('active')) loadProdutividade(); else loadVolume(); });
+darkModeTop.addEventListener('click', ()=> document.body.classList.toggle('dark-mode'));
+
+// initial open based on URL param or default to status
+const urlParams = new URLSearchParams(window.location.search);
+const initial = (urlParams.get('aba') || 'status').toLowerCase();
+window.addEventListener('load', () => {
+  if(initial === 'produtividade' || initial === 'prod') { activateTab(btnProd,'sectionProd','prod'); loadProdutividade(); }
+  else if(initial === 'volume') { activateTab(btnVolume,'sectionVolume','volume'); loadVolume(); }
+  else { activateTab(btnStatus,'sectionStatus','status'); buscarDados(); }
+
+  // try register service worker
+  if('serviceWorker' in navigator){
+    navigator.serviceWorker.register('./service-worker.js').then(()=>console.log('SW registrado')).catch(()=>{});
+  }
+});
+</script>
+
 </body>
 </html>
