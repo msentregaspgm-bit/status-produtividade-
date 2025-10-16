@@ -1,206 +1,500 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Souza Transportes</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Souza Transportes - Dashboard</title>
 
-  <link rel="manifest" href="manifest.json" />
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" />
+  <!-- Manifest e ícones -->
+  <link rel="manifest" href="manifest.json">
+  <link rel="icon" type="image/png" href="logo.png">
+
+  <!-- Estilos -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <link rel="stylesheet" href="https://unpkg.com/leaflet.fullscreen/Control.FullScreen.css" />
+
+  <!-- Scripts base -->
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <script src="https://unpkg.com/leaflet.fullscreen/Control.FullScreen.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
   <style>
-    body { background:#fff; font-family:"Segoe UI",sans-serif; padding:10px; transition:background .3s,color .3s; }
-    body.dark-mode { background:#1c1c1c; color:#fff; }
-    h1 { color:#2e7d32; font-weight:700; font-size:20px; margin:0; }
-    .header { display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; margin-bottom:10px; }
-    .logo { height:50px; width:auto; border-radius:8px; }
-    .title-wrap { text-align:center; flex:1; }
-    .legend { font-size:.9rem; color:#666; }
-    .top-btns { display:flex; gap:6px; align-items:center; }
-    #map { height:450px; border-radius:12px; margin:10px 0; }
-    .card { border-radius:12px; box-shadow:0 2px 8px rgba(0,0,0,.08); }
-    .status-carregado { color:#2e7d32; }
-    .status-descarregando { color:#ff9800; }
-    .status-parado { color:#d32f2f; }
-    .truck-label { color:white; font-weight:600; text-shadow:0 0 4px rgba(0,0,0,.8); font-size:12px; white-space:nowrap; }
-    .souza-toast { position:fixed; right:16px; bottom:20px; background:#2e7d32; color:#fff; padding:10px 14px; border-radius:8px; box-shadow:0 6px 18px rgba(0,0,0,.18); z-index:9999; }
+    body {
+      background-color: #fff;
+      font-family: 'Segoe UI', sans-serif;
+      margin: 0;
+      padding: 0;
+      transition: background 0.3s, color 0.3s;
+    }
+    body.dark-mode {
+      background-color: #121212;
+      color: #fff;
+    }
+    header {
+      text-align: center;
+      padding: 10px;
+      background-color: #e8f5e9;
+      position: sticky;
+      top: 0;
+      z-index: 1000;
+    }
+    body.dark-mode header {
+      background-color: #1e1e1e;
+    }
+    .logo {
+      width: 90px;
+      vertical-align: middle;
+      margin-right: 10px;
+    }
+    .title {
+      font-weight: 700;
+      font-size: 1.4rem;
+      vertical-align: middle;
+    }
+    .tab-buttons {
+      display: flex;
+      justify-content: space-around;
+      flex-wrap: wrap;
+      padding: 10px;
+      background-color: #f5f5f5;
+    }
+    .tab-buttons button {
+      flex: 1;
+      margin: 4px;
+      border-radius: 10px;
+      border: none;
+      padding: 10px;
+      font-weight: 600;
+      cursor: pointer;
+      background-color: #2e7d32;
+      color: #fff;
+      transition: all 0.2s;
+    }
+    .tab-buttons button.active {
+      background-color: #1b5e20;
+    }
+    body.dark-mode .tab-buttons {
+      background-color: #2a2a2a;
+    }
+
+    #map { height: 480px; border-radius: 12px; margin-top: 10px; }
+    .map-legend {
+      position: absolute; bottom: 20px; right: 20px;
+      background: rgba(255,255,255,0.9); padding: 8px;
+      border-radius: 8px; box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+    }
+
+    .truck-label {
+      color: #fff;
+      font-weight: 600;
+      text-shadow: 0 0 3px rgba(0,0,0,0.8);
+      font-size: 12px;
+      padding: 2px 6px;
+      border-radius: 6px;
+      white-space: nowrap;
+    }
+
+    .footer {
+      text-align: center;
+      color: #888;
+      font-size: 0.9rem;
+      margin-top: 20px;
+      padding: 10px;
+    }
+
+    .btn-clean {
+      position: fixed;
+      bottom: 15px;
+      right: 15px;
+      z-index: 2000;
+      border-radius: 50%;
+      width: 45px;
+      height: 45px;
+      font-size: 20px;
+    }
+
+    canvas {
+      background: rgba(255,255,255,0.9);
+      border-radius: 12px;
+      padding: 10px;
+      margin-bottom: 20px;
+    }
   </style>
 </head>
+
 <body>
-  <div class="container">
-    <div class="header">
-      <img src="logo.png" class="logo" alt="Souza Transportes" />
-      <div class="title-wrap">
-        <h1>Souza Transportes</h1>
-        <div class="legend" id="pageLegend">🚛 Status da Frota</div>
-      </div>
-      <div class="top-btns">
-        <button id="refreshBtn" class="btn btn-success btn-sm" title="Atualizar">🔄</button>
-        <button id="clearCacheBtn" class="btn btn-outline-secondary btn-sm" title="Limpar Cache">🧹</button>
-        <button id="darkModeBtn" class="btn btn-outline-dark btn-sm" title="Modo Escuro">🌙</button>
-      </div>
-    </div>
+  <header>
+    <img src="logo.png" alt="Souza" class="logo">
+    <span class="title">Souza Transportes</span>
+  </header>
 
-    <div class="filter-bar d-flex flex-wrap gap-2 mb-2">
-      <select id="filtroStatus" class="form-select form-select-sm"><option value="">Todos os Status</option></select>
-      <select id="filtroProduto" class="form-select form-select-sm"><option value="">Todos os Produtos</option></select>
-      <select id="filtroDestino" class="form-select form-select-sm"><option value="">Todos os Destinos</option></select>
-    </div>
-
-    <div id="resumoContainer" class="alert alert-light shadow-sm small">
-      <strong>Resumo:</strong> <span id="resumoTexto" class="text-muted">Carregando...</span>
-    </div>
-
-    <div id="map"></div>
-
-    <div id="frotaContainer" class="row g-3 mt-2"></div>
-
-    <div class="footer text-center text-muted small mt-3">© 2025 Souza Transportes</div>
+  <div class="tab-buttons">
+    <button class="tab-btn active" data-tab="frota">🚛 Status Frota</button>
+    <button class="tab-btn" data-tab="produtividade">📈 Produtividade</button>
+    <button class="tab-btn" data-tab="volume">📊 Volume Entregue</button>
   </div>
 
-  <script>
-  const scriptURL = "https://script.google.com/macros/s/AKfycbyZDvHD4CCG4xAbuIjckNApANUkDow8uifF96C1R5DRKd4soQJVZKvNoWJ6hLDPyc5n/exec";
-  let map, markers = [], dadosFrota = [];
-  const geocodeCacheKey = "souza_geocode_cache_v2";
+  <div id="conteudo"></div>
+  <button id="clearCache" class="btn btn-danger btn-clean" title="Limpar cache">🧹</button>
 
-  function showToast(msg, err=false, t=3000){
-    const div=document.createElement("div");
-    div.className="souza-toast";
-    div.style.background=err?"#d32f2f":"#2e7d32";
-    div.innerText=msg;
-    document.body.appendChild(div);
-    setTimeout(()=>{div.style.opacity="0";setTimeout(()=>div.remove(),400)},t);
+  <footer class="footer">© 2025 Souza Transportes</footer>
+<script>
+const scriptURL = "https://script.google.com/macros/s/AKfycbyZDvHD4CCG4xAbuIjckNApANUkDow8uifF96C1R5DRKd4soQJVZKvNoWJ6hLDPyc5n/exec";
+let map, markers = [], dadosFrota = [];
+
+/* ======= UTILITÁRIOS ======= */
+function limparCache() {
+  localStorage.clear();
+  sessionStorage.clear();
+  caches.keys().then(keys => keys.forEach(k => caches.delete(k)));
+  location.reload();
+}
+document.getElementById("clearCache").addEventListener("click", limparCache);
+
+function toggleTheme() {
+  document.body.classList.toggle("dark-mode");
+  localStorage.setItem("dark", document.body.classList.contains("dark-mode"));
+}
+
+/* ======= MAPA ======= */
+function getTruckIcon(color) {
+  return L.divIcon({
+    className: "truck-marker",
+    html: `<div style="font-size:24px;">🚛</div>`,
+    iconSize: [24, 24],
+    iconAnchor: [12, 12]
+  });
+}
+
+function getLabelHTML(text, color) {
+  const bg = color === "green" ? "#2e7d32" : color === "orange" ? "#ff9800" : "#c62828";
+  return `<div class="truck-label" style="background:${bg};">${text}</div>`;
+}
+
+async function geocodeCidade(cidade) {
+  try {
+    const resp = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(cidade + ', Brasil')}`);
+    const data = await resp.json();
+    if (data && data.length > 0)
+      return [parseFloat(data[0].lat), parseFloat(data[0].lon)];
+  } catch (e) {
+    console.warn("Erro ao geocodificar", cidade);
   }
+  return null;
+}
 
-  function limparCache(){
-    localStorage.removeItem(geocodeCacheKey);
-    showToast("Cache limpo ✅");
-  }
+function aplicarDeslocamento(lat, lon) {
+  const d = 0.02 * (Math.random() - 0.5);
+  return [lat + d, lon + d];
+}
 
-  function aplicarDeslocamento(lat, lon){
-    const off=0.02*(Math.random()-0.5);
-    return [lat+off, lon+off];
-  }
+async function atualizarMapa(dados) {
+  if (!map) {
+    map = L.map("map", { fullscreenControl: true }).setView([-15.78, -47.93], 5);
 
-  async function geocodeCidade(cidade){
-    if(!cidade) return null;
-    const cache=JSON.parse(localStorage.getItem(geocodeCacheKey)||"{}");
-    if(cache[cidade]) return cache[cidade];
-    try{
-      const r=await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(cidade+", Brasil")}`);
-      const j=await r.json();
-      if(j&&j[0]){
-        const obj=[parseFloat(j[0].lat), parseFloat(j[0].lon)];
-        cache[cidade]=obj;
-        localStorage.setItem(geocodeCacheKey, JSON.stringify(cache));
-        return obj;
-      }
-    }catch(e){console.warn("geocodeCidade",e);}
-    return null;
-  }
+    const hybrid = L.tileLayer('https://{s}.google.com/vt/lyrs=y,m&x={x}&y={y}&z={z}', {
+      maxZoom: 20,
+      subdomains: ['mt0','mt1','mt2','mt3'],
+      attribution: 'Map data © Google Maps'
+    }).addTo(map);
 
-  async function atualizarMapa(dados){
-    if(!map){
-      map=L.map("map",{fullscreenControl:true}).setView([-15.78,-47.93],5);
-      const hybrid=L.tileLayer("https://{s}.google.com/vt/lyrs=y,m&x={x}&y={y}&z={z}",{
-        maxZoom:20,
-        subdomains:["mt0","mt1","mt2","mt3"],
-        attribution:"Map data © Google Maps"
-      }).addTo(map);
-      const osm=L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",{attribution:"© OpenStreetMap"});
-      L.control.layers({"🛰️ Híbrido (Rodovias)":hybrid,"🗺️ OpenStreetMap":osm}).addTo(map);
-    }
-    markers.forEach(m=>map.removeLayer(m)); markers=[];
-    const group=[];
-    for(const v of dados){
-      const cidade=v["Posição"]||"";
-      const frota=v.Frota||"";
-      const status=(v.Status||"").toLowerCase();
-      const color=status.includes("carregado")?"green":status.includes("descarregando")?"orange":"red";
-      let pos=null;
-      const lat=parseFloat(v.Latitude), lon=parseFloat(v.Longitude);
-      if(!isNaN(lat)&&!isNaN(lon)) pos=aplicarDeslocamento(lat,lon);
-      else { const g=await geocodeCidade(cidade); if(g) pos=aplicarDeslocamento(g[0],g[1]); }
-      if(pos){
-        const icon=L.divIcon({html:`<div style="font-size:22px;color:${color}">🚛</div>`,iconSize:[24,24],iconAnchor:[12,12]});
-        const marker=L.marker(pos,{icon}).addTo(map);
-        marker.bindPopup(`<b>${frota}</b><br>${v.Status}<br>${v.Produto}<br>${cidade}<br><b>Destino:</b> ${v.Destino||"-"}`);
-        const label=L.divIcon({className:"truck-label",html:frota,iconSize:[100,20],iconAnchor:[50,-15]});
-        L.marker(pos,{icon:label}).addTo(map);
-        markers.push(marker); group.push(marker);
-      }
-    }
-    if(group.length){
-      const gLayer=L.featureGroup(group);
-      map.fitBounds(gLayer.getBounds(),{padding:[30,30]});
-    }
-  }
-
-  function renderizarFrota(dados){
-    const cont=document.getElementById("frotaContainer");
-    const resumo=document.getElementById("resumoTexto");
-    cont.innerHTML="";
-    const total=dados.length;
-    const c=dados.filter(v=>v.Status.toLowerCase().includes("carregado")).length;
-    const d=dados.filter(v=>v.Status.toLowerCase().includes("descarregando")).length;
-    const v=total-c-d;
-    resumo.innerHTML=`Total: <b>${total}</b> | Carregados: <span class="text-success"><b>${c}</b></span> | Descarregando: <span class="text-warning"><b>${d}</b></span> | Vazios: <span class="text-danger"><b>${v}</b></span>`;
-    dados.forEach(x=>{
-      const st=(x.Status||"").toLowerCase();
-      const stClass=st.includes("carregado")?"status-carregado":st.includes("descarregando")?"status-descarregando":"status-parado";
-      cont.innerHTML+=`<div class="col-6 col-md-3"><div class="card p-2"><h6>${x.Frota||"-"}</h6><p class="${stClass}">${x.Status||"-"}</p><p><b>Produto:</b> ${x.Produto||"-"}</p><p><b>Posição:</b> ${x["Posição"]||"-"}</p><p><b>Destino:</b> ${x.Destino||"-"}</p><button class="btn btn-sm btn-outline-success mt-1" onclick="destacarCaminhao('${x.Frota}')">📍 Mapa</button></div></div>`;
+    const osm = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: '© OpenStreetMap'
     });
-    atualizarMapa(dados);
+
+    L.control.layers({ "🛰️ Híbrido (Google)": hybrid, "🗺️ OpenStreetMap": osm }).addTo(map);
   }
 
-  function aplicarFiltros(){
-    const fs=document.getElementById("filtroStatus").value.toLowerCase();
-    const fp=document.getElementById("filtroProduto").value.toLowerCase();
-    const fd=document.getElementById("filtroDestino").value.toLowerCase();
-    const filtrados=dadosFrota.filter(v=>
-      (!fs||v.Status.toLowerCase().includes(fs))&&
-      (!fp||(v.Produto||"").toLowerCase().includes(fp))&&
-      (!fd||(v.Destino||"").toLowerCase().includes(fd))
-    );
-    renderizarFrota(filtrados);
-  }
+  markers.forEach(m => map.removeLayer(m));
+  markers = [];
 
-  function preencherFiltros(dados){
-    const s=new Set(), p=new Set(), d=new Set();
-    dados.forEach(v=>{ s.add(v.Status); p.add(v.Produto); d.add(v.Destino); });
-    const fill=(id,set)=>{ const el=document.getElementById(id); set.forEach(v=>{ if(v) el.innerHTML+=`<option value="${v}">${v}</option>`; }); };
-    fill("filtroStatus",s); fill("filtroProduto",p); fill("filtroDestino",d);
-  }
+  const group = [];
+  for (const v of dados) {
+    const cidade = v["Posição"] || "";
+    const frota = v.Frota || "";
+    const motorista = v.Motorista || "";
+    const status = (v.Status || "").toLowerCase();
+    const cor = status.includes("carregado") ? "green" :
+                status.includes("descarregando") ? "orange" : "red";
 
-  async function buscarDados(){
-    const cont=document.getElementById("frotaContainer");
-    cont.innerHTML="<p class='text-center text-muted'>🔄 Carregando...</p>";
-    try{
-      const resp=await fetch(scriptURL+"?t="+Date.now());
-      const data=await resp.json();
-      dadosFrota=data;
-      preencherFiltros(data);
-      renderizarFrota(data);
-    }catch(e){
-      cont.innerHTML="<p class='text-center text-danger'>Erro ao carregar.</p>";
-      console.error(e);
+    let pos = null;
+    const lat = parseFloat(v.Latitude);
+    const lon = parseFloat(v.Longitude);
+
+    if (!isNaN(lat) && !isNaN(lon)) pos = aplicarDeslocamento(lat, lon);
+    else {
+      const latlng = await geocodeCidade(cidade);
+      if (latlng) pos = aplicarDeslocamento(latlng[0], latlng[1]);
+    }
+
+    if (pos) {
+      const icon = getTruckIcon(cor);
+      const marker = L.marker(pos, { icon }).addTo(map);
+      marker.bindPopup(`<b>${frota}</b><br>${v.Status}<br>${v.Produto}<br>${cidade}<br><b>Destino:</b> ${v.Destino || '-'}`);
+
+      // Nome do motorista com fundo colorido
+      const nomeCurto = `${frota} - ${motorista.split(" ")[0]}`;
+      const labelIcon = L.divIcon({
+        className: "truck-label",
+        html: getLabelHTML(nomeCurto, cor),
+        iconSize: [100, 20],
+        iconAnchor: [50, -15]
+      });
+      L.marker(pos, { icon: labelIcon }).addTo(map);
+
+      markers.push(marker);
+      group.push(marker);
     }
   }
 
-  function destacarCaminhao(frota){
-    const m=markers.find(m=>m.getPopup&&m.getPopup().getContent().includes(frota));
-    if(m){ map.setView(m.getLatLng(),10); m.openPopup(); }
+  if (group.length) {
+    const g = L.featureGroup(group);
+    map.fitBounds(g.getBounds(), { padding: [30, 30] });
   }
+}
 
-  document.getElementById("refreshBtn").addEventListener("click",buscarDados);
-  document.getElementById("clearCacheBtn").addEventListener("click",limparCache);
-  document.getElementById("darkModeBtn").addEventListener("click",()=>document.body.classList.toggle("dark-mode"));
-  document.querySelectorAll(".filter-bar select").forEach(s=>s.addEventListener("change",aplicarFiltros));
-  window.onload=()=>{ buscarDados(); };
-  </script>
+/* ======= ABA STATUS FROTA ======= */
+async function carregarStatusFrota() {
+  document.getElementById("conteudo").innerHTML = `
+    <div class="container mt-2">
+      <div class="text-center mb-2">
+        <button class="btn btn-success btn-sm" id="refreshBtn">🔄 Atualizar</button>
+        <button class="btn btn-outline-dark btn-sm" onclick="toggleTheme()">🌙 Tema</button>
+      </div>
+      <div id="map"></div>
+      <div class="map-legend">
+        <div><span style="background:green;width:12px;height:12px;display:inline-block;margin-right:5px;"></span>Carregado</div>
+        <div><span style="background:orange;width:12px;height:12px;display:inline-block;margin-right:5px;"></span>Descarregando</div>
+        <div><span style="background:red;width:12px;height:12px;display:inline-block;margin-right:5px;"></span>Vazio</div>
+      </div>
+    </div>`;
+
+  document.getElementById("refreshBtn").addEventListener("click", buscarDadosStatus);
+
+  await buscarDadosStatus();
+}
+
+async function buscarDadosStatus() {
+  try {
+    const res = await fetch(`${scriptURL}?aba=status&t=${Date.now()}`);
+    const data = await res.json();
+    dadosFrota = data;
+    atualizarMapa(data);
+  } catch (e) {
+    console.error("Erro ao carregar Status Frota", e);
+  }
+}
+</script>
+<script>
+// ========== UTIL / FORMATAÇÃO ==========
+function fmtBRL(v){ return new Intl.NumberFormat('pt-BR',{style:'currency',currency:'BRL',maximumFractionDigits:0}).format(Math.round(v||0)); }
+function fmtNum(v, dp=1){ return (typeof v==='number' ? v : parseFloat(v||0)).toLocaleString('pt-BR',{maximumFractionDigits:dp}); }
+
+// ========== PRODUTIVIDADE ==========
+let charts = [];
+async function carregarProdutividade() {
+  document.getElementById("conteudo").innerHTML = `
+    <div class="container mt-2">
+      <div class="row g-3 mb-2">
+        <div class="col-6 col-md-3"><div class="card p-2"><div class="small text-muted">Faturamento Total</div><div id="kpiFaturamento" class="h5">--</div></div></div>
+        <div class="col-6 col-md-3"><div class="card p-2"><div class="small text-muted">Comissão Total</div><div id="kpiComissao" class="h5">--</div></div></div>
+        <div class="col-6 col-md-3"><div class="card p-2"><div class="small text-muted">Peso Total (ton)</div><div id="kpiPeso" class="h5">--</div></div></div>
+        <div class="col-6 col-md-3"><div class="card p-2"><div class="small text-muted">Viagens</div><div id="kpiViagens" class="h5">--</div></div></div>
+      </div>
+
+      <div class="row g-3">
+        <div class="col-12 col-md-6"><canvas id="chartPesoMotorista"></canvas></div>
+        <div class="col-12 col-md-6"><canvas id="chartComissaoMotorista"></canvas></div>
+      </div>
+    </div>
+  `;
+  await buscarDadosProdutividade();
+}
+
+async function buscarDadosProdutividade(){
+  try {
+    // limpa charts
+    charts.forEach(c=>{ try{ c.destroy(); }catch(e){} });
+    charts = [];
+    document.getElementById("kpiFaturamento").innerText = "Carregando...";
+    const resp = await fetch(`${scriptURL}?aba=produtividade&t=${Date.now()}`);
+    const data = await resp.json() || [];
+
+    // agregações
+    const byPeso = {}, byCom = {};
+    let totalFat=0,totalCom=0,totalPeso=0,totalViagens=0;
+    data.forEach(r=>{
+      const motoristaFull = r.MOTORISTA || r.Motorista || r.motorista || r['Motorista'] || '—';
+      const first = String(motoristaFull).split(' ')[0];
+      const peso = parseFloat((r['PESO CARREGADO (TON)'] ?? r['PESO CARREGADO'] ?? r.PESO ?? 0) || 0) || 0;
+      const fat = parseFloat((r['FATURAMENTO FRETE'] ?? r['FATURAMENTO'] ?? r.FATURAMENTO || 0) || 0) || 0;
+      const com = parseFloat((r['COMISSÃO (12%)'] ?? r['COMISSÃO'] ?? r.COMISSAO || 0) || 0) || 0;
+      const viagem = parseInt(r['VIAGEM']||r.VIAGEM||0) || 0;
+
+      byPeso[first] = (byPeso[first]||0) + peso;
+      byCom[first] = (byCom[first]||0) + com;
+      totalFat += fat; totalCom += com; totalPeso += peso; totalViagens += viagem;
+    });
+
+    document.getElementById("kpiFaturamento").innerText = fmtBRL(totalFat);
+    document.getElementById("kpiComissao").innerText = fmtBRL(totalCom);
+    document.getElementById("kpiPeso").innerText = fmtNum(totalPeso,1) + ' ton';
+    document.getElementById("kpiViagens").innerText = totalViagens;
+
+    // preparar charts — pegar top 12
+    const pesoPairs = Object.entries(byPeso).sort((a,b)=>b[1]-a[1]).slice(0,12);
+    const pesoLabels = pesoPairs.map(p=>p[0]);
+    const pesoData = pesoPairs.map(p=>p[1]);
+
+    const ctxPeso = document.getElementById('chartPesoMotorista').getContext('2d');
+    charts.push(new Chart(ctxPeso, {
+      type: 'bar',
+      data: { labels: pesoLabels, datasets: [{ label:'Peso (ton)', data: pesoData }]},
+      options: {
+        indexAxis: 'y',
+        responsive:true,
+        maintainAspectRatio:false,
+        plugins: { legend:{display:false}, tooltip:{mode:'index',intersect:false} },
+        scales:{ x:{ beginAtZero:true } }
+      }
+    }));
+
+    const comPairs = Object.entries(byCom).sort((a,b)=>b[1]-a[1]).slice(0,12);
+    const comLabels = comPairs.map(p=>p[0]);
+    const comData = comPairs.map(p=>p[1]);
+    const maxCom = comData.length ? Math.max(...comData) : 0;
+
+    const ctxCom = document.getElementById('chartComissaoMotorista').getContext('2d');
+    charts.push(new Chart(ctxCom, {
+      type: 'bar',
+      data: { labels: comLabels, datasets: [{ label:'Comissão (R$)', data: comData }]},
+      options: {
+        indexAxis: 'y',
+        responsive:true,
+        maintainAspectRatio:false,
+        plugins: { legend:{display:false}, tooltip:{callbacks:{label: ctx => fmtBRL(ctx.raw) }} },
+        scales:{ x:{ beginAtZero:true, suggestedMax: Math.ceil(maxCom*1.2) } }
+      }
+    }));
+
+  } catch (e) {
+    console.error("Erro produtividade", e);
+  }
+}
+
+// ========== VOLUME ENTREGUE ==========
+async function carregarVolume() {
+  document.getElementById("conteudo").innerHTML = `
+    <div class="container mt-2">
+      <div class="card p-2 mb-2">
+        <div class="small text-muted">Entregue (total)</div>
+        <div id="kpiVolumeTotal" class="h5">--</div>
+      </div>
+      <div id="volumeByFazenda"></div>
+    </div>
+  `;
+  await buscarDadosVolume();
+}
+
+async function buscarDadosVolume(){
+  try {
+    const resp = await fetch(`${scriptURL}?aba=volume&t=${Date.now()}`);
+    const data = await resp.json() || [];
+
+    // agregação
+    const byFaz = {};
+    let totalEnt = 0;
+    data.forEach(r=>{
+      const faz = (r.FAZENDA || r.Fazenda || r.fazenda || '').trim();
+      const prod = (r.PRODUTO || r.Produto || r.produto || '').trim();
+      const pedido = r.Pedido || r.PEDIDO || r.pedido || r['Pedido'] || null;
+      const vol = parseFloat((r['VOLUME ENTEGUE (TON)'] ?? r['VOLUME ENTREGUE (TON)'] ?? r.VOLUME || 0) || 0) || 0;
+      const saldo = parseFloat((r.Saldo || r.SALDO || r.saldo || 0) || 0) || 0;
+      if(!faz || !prod) return;
+      if(!byFaz[faz]) byFaz[faz] = {};
+      if(!byFaz[faz][prod]) byFaz[faz][prod] = { pedido:null, entregue:0, saldo:0 };
+      if(pedido !== null && pedido !== '') byFaz[faz][prod].pedido = pedido;
+      byFaz[faz][prod].entregue += vol;
+      byFaz[faz][prod].saldo += saldo;
+      totalEnt += vol;
+    });
+
+    document.getElementById('kpiVolumeTotal').innerText = fmtNum(totalEnt,1) + ' ton';
+
+    const container = document.getElementById('volumeByFazenda');
+    if(!container) return;
+    container.innerHTML = '';
+    const fazendas = Object.keys(byFaz).sort();
+    fazendas.forEach(faz => {
+      let html = `<div class="card p-2 mb-2"><strong>🌾 ${faz}</strong><div class="mt-2">`;
+      const prods = Object.entries(byFaz[faz]).sort((a,b)=>b[1].entregue - a[1].entregue);
+      prods.forEach(([prod,info])=>{
+        const pedidoTxt = info.pedido !== null && info.pedido !== '' ? info.pedido : '-';
+        html += `<div style="padding:8px 0;border-bottom:1px dashed #eee">
+                   <div style="font-weight:600">${prod}</div>
+                   <div style="font-size:.95rem;color:#444">Pedido: <b>${pedidoTxt}</b> | Entregue: <b>${fmtNum(info.entregue,1)} ton</b> | Saldo: <b>${fmtNum(info.saldo,1)} ton</b></div>
+                 </div>`;
+      });
+      html += `</div></div>`;
+      container.innerHTML += html;
+    });
+
+  } catch (e) {
+    console.error("Erro volume", e);
+    const container = document.getElementById('volumeByFazenda');
+    if(container) container.innerHTML = '<p class="text-danger">Erro ao carregar volume.</p>';
+  }
+}
+
+// ========== TABS e INICIALIZAÇÃO ==========
+function setActiveTab(name){
+  document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
+  const btn = Array.from(document.querySelectorAll('.tab-btn')).find(b=>b.dataset.tab===name);
+  if(btn) btn.classList.add('active');
+
+  // chamar carregadores
+  if(name==='frota') carregarStatusFrota();
+  if(name==='produtividade') carregarProdutividade();
+  if(name==='volume') carregarVolume();
+
+  // salvar último tab
+  localStorage.setItem('souza_last_tab', name);
+}
+
+// bind botoes
+document.querySelectorAll('.tab-btn').forEach(b=>{
+  b.addEventListener('click', ()=> setActiveTab(b.dataset.tab));
+});
+
+// manter tema
+(function(){
+  const dark = localStorage.getItem('dark') === 'true';
+  if(dark) document.body.classList.add('dark-mode');
+})();
+
+// inicialização (carrega a tab salva ou frota)
+window.addEventListener('load', ()=>{
+  const last = localStorage.getItem('souza_last_tab') || 'frota';
+  setActiveTab(last);
+
+  // registrar service worker se existir
+  if('serviceWorker' in navigator){
+    navigator.serviceWorker.register('./service-worker.js').then(()=>console.log('SW registrado')).catch(()=>{/*silent*/});
+  }
+});
+
+// função para destacar caminhão por nome (usada pelos botões nos cards)
+window.destacarCaminhao = function(nome){
+  // procurar marcador pelo popup que contenha o nome
+  const m = markers.find(mk => mk.getPopup && mk.getPopup().getContent().includes(nome));
+  if(m){
+    try{ map.setView(m.getLatLng(), 10); m.openPopup(); }catch(e){}
+  } else {
+    showToast('Caminhão não localizado no mapa', true);
+  }
+};
+</script>
+
 </body>
 </html>
