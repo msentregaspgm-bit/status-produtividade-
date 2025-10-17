@@ -36,6 +36,7 @@
     .footer{ text-align:center; color:var(--muted); margin-top:14px; font-size:0.85rem; }
     @media(max-width:768px){ #map{ height:320px; } h1{ font-size:18px; } canvas{ max-height:260px !important; height:260px !important; } }
 
+    .truck-div { display:inline-block; color:#fff; padding:3px 7px; border-radius:6px; font-size:12px; box-shadow:0 1px 4px rgba(0,0,0,0.4); white-space:nowrap; }
     .leaflet-control.custom-fullscreen a { background:#fff; padding:6px; border-radius:6px; display:inline-block; box-shadow:0 1px 3px rgba(0,0,0,0.2); }
     .loading-overlay { position:fixed; left:0; right:0; top:0; bottom:0; display:flex; align-items:center; justify-content:center; background:rgba(255,255,255,0.6); z-index:1200; font-size:1.1rem; color:#333; }
     body.dark-mode .loading-overlay { background:rgba(0,0,0,0.6); color:#eee; }
@@ -72,9 +73,12 @@
       </div>
 
       <div id="resumoContainer" class="card card-kpi mb-2"><div id="resumoTexto">Carregando dados...</div></div>
+
       <div id="map"></div>
+
       <div id="frotaContainer" class="row g-3 mt-2"></div>
     </div>
+
     <div id="sectionProd" class="section">
       <div class="row g-3 mb-2">
         <div class="col-md-3"><div class="card card-kpi"><div class="kpi-label">Faturamento Total</div><div id="kpiFaturamento" class="kpi-value">--</div></div></div>
@@ -101,6 +105,7 @@
   </div>
 
   <div id="loading" class="loading-overlay" style="display:none">Carregando... 🔄</div>
+
   <script>
   (function(){
     // ===== CONFIG =====
@@ -129,7 +134,7 @@
     function loadGeocodeCache(){ try{ const raw = localStorage.getItem(geocodeCacheKey); return raw ? JSON.parse(raw) : {}; }catch(e){ return {}; } }
     function saveGeocodeCache(c){ try{ localStorage.setItem(geocodeCacheKey, JSON.stringify(c)); }catch(e){} }
 
-    // safe fetch + parse JSON
+    // safe fetch + parse JSON with improved errors & timeout
     async function fetchJsonSafe(url, opts = {}, timeout = 12000){
       const controller = new AbortController();
       const id = setTimeout(()=>controller.abort(), timeout);
@@ -137,30 +142,37 @@
         const resp = await fetch(url, Object.assign({}, opts, { signal: controller.signal }));
         clearTimeout(id);
         if(!resp.ok) throw new Error('HTTP '+resp.status+' - '+resp.statusText);
+        // try parse JSON, if fails provide readable error
         const txt = await resp.text();
-        try{ return JSON.parse(txt); }catch(e){ throw new Error('Resposta não é JSON: ' + txt.slice(0,200)); }
-      }catch(err){ clearTimeout(id); throw err; }
+        try{
+          return JSON.parse(txt);
+        }catch(e){
+          throw new Error('Resposta não é JSON: ' + (txt.slice(0,200)));
+        }
+      }catch(err){
+        clearTimeout(id);
+        throw err;
+      }
     }
 
     // ===== MAP =====
     function initMap(){
       if(map) return;
-      map = L.map('map', { preferCanvas: true }).setView([-4.5, -48.5], 4); // Pará / Maranhão
+      map = L.map('map', { preferCanvas: true }).setView([-15.78, -47.93], 5);
 
       const esriSat = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', { attribution: 'Tiles © Esri' });
-      const osmLabels = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '&copy; OpenStreetMap' });
+      const osmLabels = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '&copy; OpenStreetMap contributors' });
+
       const hybrid = L.layerGroup([esriSat, osmLabels]).addTo(map);
-
       const osm = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png');
-      L.control.layers({ "🛰 Satélite (com rótulos)": hybrid, "🗺 Mapa padrão": osm }).addTo(map);
+      L.control.layers({ "🛰 Satélite (com rótulos)": hybrid, "🗺 OpenStreetMap": osm }).addTo(map);
 
-      // botão tela cheia
       const FullCtl = L.Control.extend({
         onAdd: function(map){
-          const c = L.DomUtil.create('div','leaflet-control custom-fullscreen');
-          c.innerHTML = `<a title="Tela cheia" href="#" id="btnMapFull">⤢</a>`;
-          L.DomEvent.disableClickPropagation(c);
-          return c;
+          const container = L.DomUtil.create('div','leaflet-control custom-fullscreen');
+          container.innerHTML = `<a title="Tela cheia" href="#" id="btnMapFull">⤢</a>`;
+          L.DomEvent.disableClickPropagation(container);
+          return container;
         }
       });
       map.addControl(new FullCtl({ position: 'topleft' }));
@@ -174,7 +186,7 @@
 
     function toggleFullscreen(elem){
       if(!document.fullscreenElement){
-        elem.requestFullscreen?.().catch(()=> alert('Falha ao entrar em tela cheia'));
+        elem.requestFullscreen?.().catch(()=>{ alert('Falha ao entrar em tela cheia'); });
       } else {
         document.exitFullscreen?.();
       }
@@ -183,24 +195,10 @@
     function createTruckMarker(lat, lon, plate, firstName, status, product, destino){
       if(!map || isNaN(lat) || isNaN(lon)) return null;
       const lower = (status||'').toLowerCase();
-      const cor = lower.includes('carregado') ? '#2e7d32' :
-                  lower.includes('descarregando') ? '#ff9800' : '#d32f2f';
+      const bg = lower.includes('carregado') ? '#2e7d32' : (lower.includes('descarregando') ? '#ff9800' : '#d32f2f');
       const label = `${plate || ''} - ${firstName || ''}`.trim();
-      const html = `
-        <div style="
-          display:inline-flex;
-          align-items:center;
-          border:2px solid ${cor};
-          border-radius:6px;
-          background:rgba(255,255,255,0.85);
-          padding:2px 6px;
-          font-size:11px;
-          box-shadow:0 1px 3px rgba(0,0,0,0.2);
-        ">
-          <span style="margin-right:4px;">🚛</span>
-          <span style="color:${cor}; font-weight:600;">${label}</span>
-        </div>`;
-      const icon = L.divIcon({ html, className:'truck-div-icon', iconSize:[Math.min(200,label.length*7+40),24], iconAnchor:[10,12] });
+      const html = `<div class="truck-div" style="background:${bg};">🚛 ${label}</div>`;
+      const icon = L.divIcon({ html, className:'truck-div-icon', iconSize:[Math.min(220,label.length*8+40),28], iconAnchor:[10,14] });
       const m = L.marker([lat,lon], { icon }).addTo(map);
       const popupHtml = `<strong>${label}</strong><br>
         <small><b>Status:</b> ${status || '-'}</small><br>
@@ -210,6 +208,12 @@
       markers.push(m);
       return m;
     }
+
+    function focusTruck(lat, lon){
+      if(!map || isNaN(lat) || isNaN(lon)) return;
+      map.setView([lat, lon], 12, { animate:true });
+    }
+
     async function geocodeCity(city){
       if(!city || !String(city).trim()) return null;
       const key = String(city).trim();
@@ -218,149 +222,356 @@
       const q = `${key}, Brasil`;
       const url = `https://nominatim.openstreetmap.org/search?format=json&limit=1&q=${encodeURIComponent(q)}`;
       try{
-        await new Promise(r=>setTimeout(r,220));
-        const resp = await fetch(url,{headers:{'Accept-Language':'pt-BR'}});
+        await new Promise(r=>setTimeout(r, 220));
+        const resp = await fetch(url, { headers:{ 'Accept-Language':'pt-BR' } });
         if(!resp.ok) return null;
         const arr = await resp.json();
         if(arr && arr[0]){
-          const lat=parseFloat(arr[0].lat),lon=parseFloat(arr[0].lon);
-          if(!isNaN(lat)&&!isNaN(lon)){
-            cache[key]={lat,lon,display_name:arr[0].display_name};
+          const lat = parseFloat(arr[0].lat), lon = parseFloat(arr[0].lon);
+          if(!isNaN(lat) && !isNaN(lon)){
+            cache[key] = { lat, lon, display_name: arr[0].display_name };
             saveGeocodeCache(cache);
             return cache[key];
           }
         }
-      }catch(e){console.warn('geocodeCity',e);}
+      }catch(e){ console.warn('geocodeCity error', e); }
       return null;
     }
 
-    function extractPlate(r){
-      const p=r.Placa||r.PLACA||r.placa||r.Frota||r.frota||'';return String(p).trim().split(/\s+/)[0];
+    function extractPlate(row){
+      const p = row.Placa || row.PLACA || row.placa || row.Frota || row.frota || '';
+      if(!p) return '';
+      const s = String(p).trim();
+      const token = s.split(/\s+/)[0];
+      return token;
     }
-    function extractFirstName(r){
-      const m=r.MOTORISTA||r.Motorista||r.motorista||r['Motorista']||'';return m?String(m).trim().split(' ')[0]:'';
+    function extractFirstName(row){
+      const m = row.MOTORISTA || row.Motorista || row.motorista || row['Motorista'] || '';
+      if(!m) return '';
+      const fn = String(m).trim().split(' ')[0];
+      return fn;
     }
 
     // ===== STATUS FROTA =====
-    async function buscarDados(showLoading=true){
-      initMap(); clearMapMarkers();
-      const cont=document.getElementById('frotaContainer');
-      cont.innerHTML="<p class='text-center text-muted'>🔄 Carregando frota...</p>";
+    async function buscarDados(showLoading = true){
+      initMap();
+      clearMapMarkers();
+      const cont = document.getElementById('frotaContainer');
+      cont.innerHTML = "<p class='text-center text-muted'>🔄 Carregando frota...</p>";
       try{
         if(showLoading) showLoadingOverlay(true);
-        const data=await fetchJsonSafe(`${scriptURL}?aba=status&t=${Date.now()}`);
-        if(!Array.isArray(data)) throw new Error('Formato inesperado');
-        dadosFrota=data;
-        const total=dadosFrota.length;
-        const carreg=dadosFrota.filter(x=>(x.Status||'').toLowerCase().includes('carregado')).length;
-        const descar=dadosFrota.filter(x=>(x.Status||'').toLowerCase().includes('descarregando')).length;
-        const vazios=total-carreg-descar;
-        document.getElementById('resumoTexto').innerHTML=
-          `Total:<b>${total}</b> | Carregados:<b style="color:green">${carreg}</b> | Descarregando:<b style="color:orange">${descar}</b> | Vazios:<b style="color:red">${vazios}</b>`;
+        const data = await fetchJsonSafe(`${scriptURL}?aba=status&t=${Date.now()}`);
+        if(!Array.isArray(data)) throw new Error('Formato de dados inesperado (esperado array).');
+        dadosFrota = data;
 
-        const setStatus=new Set(),setProduto=new Set(),setDestino=new Set();
-        data.forEach(r=>{if(r.Status)setStatus.add(r.Status);if(r.Produto)setProduto.add(r.Produto);if(r.Destino)setDestino.add(r.Destino);});
-        const fill=(id,set)=>{const el=document.getElementById(id);el.innerHTML=`<option value="">Todos</option>`;Array.from(set).forEach(v=>{if(v)el.innerHTML+=`<option value="${v}">${v}</option>`;});};
-        fill('filtroStatus',setStatus);fill('filtroProduto',setProduto);fill('filtroDestino',setDestino);
+        const total = dadosFrota.length;
+        const carreg = dadosFrota.filter(x => (x.Status||'').toLowerCase().includes('carregado')).length;
+        const descar = dadosFrota.filter(x => (x.Status||'').toLowerCase().includes('descarregando')).length;
+        const vazios = total - carreg - descar;
+        document.getElementById('resumoTexto').innerHTML = `Total: <b>${total}</b> | Carregados: <b style="color:green">${carreg}</b> | Descarregando: <b style="color:orange">${descar}</b> | Vazios: <b style="color:red">${vazios}</b>`;
 
-        cont.innerHTML=''; const bounds=[];
-        for(const r of data){
-          const plate=extractPlate(r),firstName=extractFirstName(r);
-          const status=r.Status||'',produto=r.Produto||r.PRODUTO||'-';
-          const pos=r['Posição']||r.Posicao||r.Local||'',dest=r.Destino||'-';
-          const card=document.createElement('div');
-          card.className='col-6 col-md-3';
-          card.innerHTML=`<div class="card p-2">
-            <h6>${plate?plate+' - '+firstName:'Veículo'}</h6>
+        const setStatus = new Set(), setProduto = new Set(), setDestino = new Set();
+        dadosFrota.forEach(r => { if(r.Status) setStatus.add(r.Status); if(r.Produto) setProduto.add(r.Produto); if(r.Destino) setDestino.add(r.Destino); });
+        const fill = (id, set) => {
+          const el = document.getElementById(id);
+          el.innerHTML = `<option value="">Todos</option>`;
+          Array.from(set).forEach(v => { if(v) el.innerHTML += `<option value="${v}">${v}</option>`; });
+        };
+        fill('filtroStatus', setStatus); fill('filtroProduto', setProduto); fill('filtroDestino', setDestino);
+
+        cont.innerHTML = '';
+        const bounds = [];
+
+        for(const r of dadosFrota){
+          const nomeFull = r.Frota || r.frota || r.Nome || r.Matricula || '';
+          const plate = extractPlate(r);
+          const firstName = extractFirstName(r) || (nomeFull ? String(nomeFull).split(' ')[0] : '');
+          const status = r.Status || '';
+          const produto = r.Produto || r.PRODUTO || '-';
+          const posicao = r['Posição'] || r.Posicao || r.Local || '';
+          const destino = r.Destino || '-';
+
+          const card = document.createElement('div');
+          card.className = 'col-6 col-md-3';
+          card.innerHTML = `<div class="card p-2">
+            <h6>${plate ? plate + ' - ' + firstName : (nomeFull || 'Veículo')}</h6>
             <p class="small text-muted mb-1">${status}</p>
-            <p class="mb-0"><strong>Produto:</strong>${produto}</p>
-            <p class="mb-0"><strong>Posição:</strong>${pos||'-'}</p>
-            <p class="mb-0"><strong>Destino:</strong>${dest}</p>
-            <div class="mt-2"><button class="btn btn-sm btn-outline-success btn-map">📍 Mapa</button></div>
+            <p class="mb-0"><strong>Produto:</strong> ${produto}</p>
+            <p class="mb-0"><strong>Posição:</strong> ${posicao || '-'}</p>
+            <p class="mb-0"><strong>Destino:</strong> ${destino}</p>
+            <div class="mt-2"><button class="btn btn-sm btn-outline-success btn-map" data-pos="${posicao}" data-plate="${plate}" data-name="${firstName}">📍 Mapa</button></div>
           </div>`;
           cont.appendChild(card);
-          if(pos){
-            const geo=await geocodeCity(pos);
+
+          if(posicao){
+            const geo = await geocodeCity(posicao);
             if(geo){
-              const m=createTruckMarker(geo.lat,geo.lon,plate,firstName,status,produto,dest);
-              if(m)bounds.push([geo.lat,geo.lon]);
-              card.querySelector('.btn-map').addEventListener('click',()=>{map.setView([geo.lat,geo.lon],12);m.openPopup();});
+              const m = createTruckMarker(geo.lat, geo.lon, plate || '', firstName || '', status, produto, destino);
+              if(m) bounds.push([geo.lat, geo.lon]);
+              const btn = card.querySelector('.btn-map');
+              if(btn) btn.addEventListener('click', ()=>{ focusTruck(geo.lat, geo.lon); try{ m.openPopup(); }catch(e){} });
+            } else {
+              const btn = card.querySelector('.btn-map');
+              if(btn) btn.addEventListener('click', ()=> alert('Localização não encontrada para: ' + posicao));
             }
+          } else {
+            const btn = card.querySelector('.btn-map');
+            if(btn) btn.addEventListener('click', ()=> alert('Posição não informada para este veículo.'));
           }
         }
-        if(bounds.length) map.fitBounds(bounds,{padding:[60,60]});
-      }catch(e){
-        console.error(e);cont.innerHTML="<p class='text-danger text-center'>Erro ao carregar frota.</p>";
-      }finally{showLoadingOverlay(false);}
+
+        if(bounds.length) try{ map.fitBounds(bounds, { padding:[60,60] }); }catch(e){}
+      }catch(err){
+        console.error('Erro buscarDados', err);
+        document.getElementById('frotaContainer').innerHTML = "<p class='text-danger text-center'>Erro ao carregar frota. Veja o console para detalhes.</p>";
+      } finally {
+        showLoadingOverlay(false);
+      }
     }
 
-    document.getElementById('filtroStatus').addEventListener('change',aplicarFiltros);
-    document.getElementById('filtroProduto').addEventListener('change',aplicarFiltros);
-    document.getElementById('filtroDestino').addEventListener('change',aplicarFiltros);
+    document.getElementById('filtroStatus').addEventListener('change', aplicarFiltros);
+    document.getElementById('filtroProduto').addEventListener('change', aplicarFiltros);
+    document.getElementById('filtroDestino').addEventListener('change', aplicarFiltros);
 
     async function aplicarFiltros(){
-      const fS=document.getElementById('filtroStatus').value.toLowerCase();
-      const fP=document.getElementById('filtroProduto').value.toLowerCase();
-      const fD=document.getElementById('filtroDestino').value.toLowerCase();
-      const filtrados=dadosFrota.filter(v=>
-        (!fS||(v.Status||'').toLowerCase().includes(fS))&&
-        (!fP||(v.Produto||'').toLowerCase().includes(fP))&&
-        (!fD||(v.Destino||'').toLowerCase().includes(fD))
+      const fStatus = document.getElementById('filtroStatus').value.toLowerCase();
+      const fProduto = document.getElementById('filtroProduto').value.toLowerCase();
+      const fDestino = document.getElementById('filtroDestino').value.toLowerCase();
+      const filtrados = dadosFrota.filter(v =>
+        (!fStatus || (v.Status||'').toLowerCase().includes(fStatus)) &&
+        (!fProduto || (v.Produto||'').toLowerCase().includes(fProduto)) &&
+        (!fDestino || (v.Destino||'').toLowerCase().includes(fDestino))
       );
+
       clearMapMarkers();
-      const cont=document.getElementById('frotaContainer');cont.innerHTML='';
+      const cont = document.getElementById('frotaContainer');
+      cont.innerHTML = '';
       const bounds=[];
+
       for(const r of filtrados){
-        const plate=extractPlate(r),firstName=extractFirstName(r);
-        const status=r.Status||'',produto=r.Produto||r.PRODUTO||'-';
-        const pos=r['Posição']||r.Posicao||r.Local||'',dest=r.Destino||'-';
-        const card=document.createElement('div');
-        card.className='col-6 col-md-3';
-        card.innerHTML=`<div class="card p-2"><h6>${plate?plate+' - '+firstName:'Veículo'}</h6>
+        const nomeFull = r.Frota || r.frota || r.Nome || '';
+        const plate = extractPlate(r);
+        const firstName = extractFirstName(r) || (nomeFull ? String(nomeFull).split(' ')[0] : '');
+        const status = r.Status || '';
+        const produto = r.Produto || r.PRODUTO || '-';
+        const posicao = r['Posição'] || r.Posicao || r.Local || '';
+        const destino = r.Destino || '-';
+
+        const card = document.createElement('div');
+        card.className = 'col-6 col-md-3';
+        card.innerHTML = `<div class="card p-2">
+          <h6>${plate ? plate + ' - ' + firstName : (nomeFull || 'Veículo')}</h6>
           <p class="small text-muted mb-1">${status}</p>
-          <p><b>Produto:</b>${produto}</p><p><b>Posição:</b>${pos||'-'}</p><p><b>Destino:</b>${dest}</p>
+          <p class="mb-0"><strong>Produto:</strong> ${produto}</p>
+          <p class="mb-0"><strong>Posição:</strong> ${posicao || '-'}</p>
+          <p class="mb-0"><strong>Destino:</strong> ${destino}</p>
+          <div class="mt-2"><button class="btn btn-sm btn-outline-success btn-map" data-pos="${posicao}" data-plate="${plate}" data-name="${firstName}">📍 Mapa</button></div>
         </div>`;
         cont.appendChild(card);
-        if(pos){
-          const geo=await geocodeCity(pos);
+
+        if(posicao){
+          const geo = await geocodeCity(posicao);
           if(geo){
-            const m=createTruckMarker(geo.lat,geo.lon,plate,firstName,status,produto,dest);
-            if(m)bounds.push([geo.lat,geo.lon]);
+            const m = createTruckMarker(geo.lat, geo.lon, plate || '', firstName || '', status, produto, destino);
+            if(m) bounds.push([geo.lat, geo.lon]);
+            const btn = card.querySelector('.btn-map');
+            if(btn) btn.addEventListener('click', ()=>{ focusTruck(geo.lat, geo.lon); try{ m.openPopup(); }catch(e){} });
+          } else {
+            const btn = card.querySelector('.btn-map');
+            if(btn) btn.addEventListener('click', ()=> alert('Localização não encontrada para: ' + posicao));
           }
+        } else {
+          const btn = card.querySelector('.btn-map');
+          if(btn) btn.addEventListener('click', ()=> alert('Posição não informada para este veículo.'));
         }
       }
-      if(bounds.length) map.fitBounds(bounds,{padding:[60,60]});
+
+      if(bounds.length) try{ map.fitBounds(bounds, { padding:[60,60] }); }catch(e){}
     }
 
-    // ===== PRODUTIVIDADE e VOLUME (iguais ao original) =====
-    async function loadProdutividade(){ /* ... mantém código original ... */ }
-    async function loadVolume(){ /* ... mantém código original ... */ }
+    // ===== PRODUTIVIDADE =====
+    async function loadProdutividade(){
+      clearCharts();
+      document.getElementById('kpiFaturamento').innerText = 'Carregando...';
+      try{
+        showLoadingOverlay(true);
+        const data = await fetchJsonSafe(`${scriptURL}?aba=produtividade&t=${Date.now()}`);
+        if(!Array.isArray(data)) throw new Error('Formato de dados inesperado (esperado array).');
 
-    // ===== UI e inicialização =====
-    const btnStatus=document.getElementById('btnStatus');
-    const btnProd=document.getElementById('btnProd');
-    const btnVolume=document.getElementById('btnVolume');
-    const refreshBtnTop=document.getElementById('refreshBtnTop');
-    const darkModeTop=document.getElementById('darkModeTop');
-    const appLegend=document.getElementById('appLegend');
+        const byCom = {}, byPeso = {};
+        let totalFat=0, totalCom=0, totalPeso=0, totalViagens=0;
 
-    function setLegend(k){if(k==='status')appLegend.innerText="🚛 Status da Frota";if(k==='prod')appLegend.innerText="📈 Painel de Produtividade";if(k==='volume')appLegend.innerText="📊 Relatório de Volume Entregue";}
-    function activateTab(btn,id,key){document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('active'));btn.classList.add('active');
+        data.forEach(r=>{
+          const motoristaFull = r.MOTORISTA || r.Motorista || r.motorista || '—';
+          const firstName = String(motoristaFull).split(' ')[0] || motoristaFull;
+          const peso = toNumber(r['PESO CARREGADO (TON)'] || r['PESO CARREGADO'] || r.PESO || 0);
+          const viagem = toNumber(r['VIAGEM'] || r.VIAGEM || 0);
+          const fat = toNumber(r['FATURAMENTO FRETE'] || r['FATURAMENTO'] || r.FATURAMENTO || 0);
+          const com = toNumber(r['COMISSÃO (12%)'] || r['COMISSÃO'] || r.COMISSAO || 0);
+
+          byPeso[firstName] = (byPeso[firstName]||0) + peso;
+          byCom[firstName] = (byCom[firstName]||0) + com;
+
+          totalPeso += peso; totalViagens += viagem; totalFat += fat; totalCom += com;
+        });
+
+        document.getElementById('kpiFaturamento').innerText = fmtBRL_noCents(totalFat);
+        document.getElementById('kpiComissao').innerText = fmtBRL_noCents(totalCom);
+        document.getElementById('kpiPesoTotal').innerText = totalPeso.toFixed(1);
+        document.getElementById('kpiViagensTotal').innerText = totalViagens;
+
+        const pesoPairs = Object.entries(byPeso).sort((a,b)=>b[1]-a[1]).slice(0,12);
+        const pesoLabels = pesoPairs.map(p=>p[0]);
+        const pesoData = pesoPairs.map(p=>p[1]);
+        const ctxP = document.getElementById('chartPesoMotorista').getContext('2d');
+        charts.push(new Chart(ctxP, {
+          type:'bar',
+          data:{ labels:pesoLabels, datasets:[{ label:'Peso (ton)', data:pesoData }] },
+          options:{
+            indexAxis:'y', responsive:true, maintainAspectRatio:false,
+            plugins:{ legend:{ display:false }, datalabels:{ anchor:'end', align:'right', formatter: v => v.toLocaleString('pt-BR',{maximumFractionDigits:1}) } },
+            scales:{ x:{ beginAtZero:true } }
+          },
+          plugins:[ChartDataLabels]
+        }));
+
+        const comPairs = Object.entries(byCom).sort((a,b)=>b[1]-a[1]).slice(0,12);
+        const comLabels = comPairs.map(p=>p[0]);
+        const comData = comPairs.map(p=>p[1]);
+        const maxCom = comData.length ? Math.max(...comData) : 0;
+        const sugMax = Math.ceil(maxCom * 1.2);
+        const ctxC = document.getElementById('chartComissaoMotorista').getContext('2d');
+        charts.push(new Chart(ctxC, {
+          type:'bar',
+          data:{ labels:comLabels, datasets:[{ label:'Comissão (R$)', data:comData }] },
+          options:{
+            indexAxis:'y', responsive:true, maintainAspectRatio:false,
+            plugins:{ legend:{ display:false }, datalabels:{ anchor:'end', align:'right', formatter:v=>fmtBRL_noCents(v) } },
+            scales:{ x:{ beginAtZero:true, suggestedMax: sugMax } }
+          },
+          plugins:[ChartDataLabels]
+        }));
+
+      }catch(e){
+        console.error('Erro produtividade', e);
+        document.getElementById('kpiFaturamento').innerText='Erro';
+        document.getElementById('kpiComissao').innerText='Erro';
+        alert('Falha ao carregar dados de produtividade. Verifique a conexão ou o endpoint do Google Script.');
+      } finally {
+        showLoadingOverlay(false);
+      }
+    }
+
+    // ===== VOLUME =====
+    async function loadVolume(){
+      clearCharts();
+      document.getElementById('kpiVolumeTotal').innerText = '--';
+      const container = document.getElementById('volumeByFazenda');
+      container.innerHTML = "<p class='text-center text-muted'>🔄 Carregando volume...</p>";
+
+      try{
+        showLoadingOverlay(true);
+        const data = await fetchJsonSafe(`${scriptURL}?aba=volume&t=${Date.now()}`);
+        if(!Array.isArray(data)) throw new Error('Formato de dados inesperado (esperado array).');
+
+        const byFaz = {};
+        let totalEnt = 0;
+        data.forEach(r=>{
+          const faz = (r.FAZENDA || r.Fazenda || r.fazenda || '').trim();
+          const prod = (r.PRODUTO || r.Produto || r.produto || '').trim();
+          const pedido = r.Pedido || r.PEDIDO || r.pedido || '';
+          const vol = toNumber(r['VOLUME ENTEGUE (TON)'] || r['VOLUME ENTREGUE (TON)'] || r.VOLUME || 0);
+          const saldo = toNumber(r.Saldo || r.SALDO || r.saldo || 0);
+          if(!faz || !prod) return;
+          if(!byFaz[faz]) byFaz[faz] = {};
+          if(!byFaz[faz][prod]) byFaz[faz][prod] = { pedido: null, entregue:0, saldo:0 };
+          if(pedido !== '' && pedido !== null) byFaz[faz][prod].pedido = pedido;
+          byFaz[faz][prod].entregue += vol;
+          byFaz[faz][prod].saldo += saldo;
+          totalEnt += vol;
+        });
+
+        document.getElementById('kpiVolumeTotal').innerText = totalEnt.toLocaleString('pt-BR',{maximumFractionDigits:1}) + " ton";
+
+        const fazendas = Object.keys(byFaz).sort();
+        if(fazendas.length === 0){
+          container.innerHTML = "<p class='text-muted'>Nenhum registro de volume encontrado.</p>";
+          return;
+        }
+
+        let html = '';
+        for(const faz of fazendas){
+          html += `<div class="card mb-2 p-2"><strong>🌾 ${faz}</strong>`;
+          const products = Object.entries(byFaz[faz]).sort((a,b)=>b[1].entregue - a[1].entregue);
+          html += `<div class="mt-2">`;
+          products.forEach(([prod, info])=>{
+            const pedidoTxt = info.pedido !== null && info.pedido !== '' ? String(info.pedido) : '-';
+            html += `<div style="padding:8px 0;border-bottom:1px dashed #eee">
+              <div style="font-weight:600">${prod}</div>
+              <div style="font-size:0.95rem;color:#444">Pedido: <b>${pedidoTxt}</b> | Entregue: <b>${info.entregue.toLocaleString('pt-BR',{maximumFractionDigits:1})} ton</b> | Saldo: <b>${info.saldo.toLocaleString('pt-BR',{maximumFractionDigits:1})} ton</b></div>
+            </div>`;
+          });
+          html += `</div></div>`;
+        }
+        container.innerHTML = html;
+
+      }catch(err){
+        console.error('Erro loadVolume', err);
+        container.innerHTML = "<p class='text-danger'>Erro ao carregar volume. Veja o console para mais detalhes.</p>";
+        alert('Falha ao carregar dados de volume. Verifique a conexão ou o endpoint do Google Script.');
+      } finally {
+        showLoadingOverlay(false);
+      }
+    }
+
+    // ===== UI =====
+    const btnStatus = document.getElementById('btnStatus');
+    const btnProd = document.getElementById('btnProd');
+    const btnVolume = document.getElementById('btnVolume');
+    const refreshBtnTop = document.getElementById('refreshBtnTop');
+    const darkModeTop = document.getElementById('darkModeTop');
+    const appLegend = document.getElementById('appLegend');
+
+    function setLegend(key){
+      if(key==='status') appLegend.innerText = "🚛 Status da Frota";
+      if(key==='prod') appLegend.innerText = "📈 Painel de Produtividade";
+      if(key==='volume') appLegend.innerText = "📊 Relatório de Volume Entregue";
+    }
+    function activateTab(btn, sectionId, key){
+      document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('active'));
+      btn.classList.add('active');
       document.querySelectorAll('.section').forEach(s=>s.classList.remove('active'));
-      document.getElementById(id).classList.add('active');setLegend(key);}
+      document.getElementById(sectionId).classList.add('active');
+      setLegend(key);
+    }
 
-    btnStatus.addEventListener('click',()=>{activateTab(btnStatus,'sectionStatus','status');buscarDados();});
-    btnProd.addEventListener('click',()=>{activateTab(btnProd,'sectionProd','prod');loadProdutividade();});
-    btnVolume.addEventListener('click',()=>{activateTab(btnVolume,'sectionVolume','volume');loadVolume();});
-    refreshBtnTop.addEventListener('click',()=>{if(document.getElementById('sectionStatus').classList.contains('active'))buscarDados(false);else if(document.getElementById('sectionProd').classList.contains('active'))loadProdutividade();else loadVolume();});
-    darkModeTop.addEventListener('click',()=>document.body.classList.toggle('dark-mode'));
+    btnStatus.addEventListener('click', ()=>{ activateTab(btnStatus,'sectionStatus','status'); buscarDados(); });
+    btnProd.addEventListener('click', ()=>{ activateTab(btnProd,'sectionProd','prod'); loadProdutividade(); });
+    btnVolume.addEventListener('click', ()=>{ activateTab(btnVolume,'sectionVolume','volume'); loadVolume(); });
+    refreshBtnTop.addEventListener('click', ()=>{ if(document.getElementById('sectionStatus').classList.contains('active')) buscarDados(false); else if(document.getElementById('sectionProd').classList.contains('active')) loadProdutividade(); else loadVolume(); });
+    darkModeTop.addEventListener('click', ()=> document.body.classList.toggle('dark-mode'));
 
-    function showLoadingOverlay(on){document.getElementById('loading').style.display=on?'flex':'none';}
+    const urlParams = new URLSearchParams(window.location.search);
+    const initial = (urlParams.get('aba') || 'status').toLowerCase();
 
-    window.addEventListener('load',()=>{
-      initMap();buscarDados();
-      if('serviceWorker' in navigator){navigator.serviceWorker.register('./service-worker.js').catch(()=>{});}
+    function showLoadingOverlay(on){
+      const el = document.getElementById('loading');
+      el.style.display = on ? 'flex' : 'none';
+    }
+
+    window.addEventListener('load', ()=>{ 
+      initMap();
+      if(initial === 'produtividade' || initial === 'prod') { activateTab(btnProd,'sectionProd','prod'); loadProdutividade(); }
+      else if(initial === 'volume') { activateTab(btnVolume,'sectionVolume','volume'); loadVolume(); }
+      else { activateTab(btnStatus,'sectionStatus','status'); buscarDados(); }
+
+      if('serviceWorker' in navigator){
+        navigator.serviceWorker.register('./service-worker.js').then(()=>console.log('SW registrado')).catch(()=>console.warn('SW registra falhou'));
+      }
     });
+
+    window.souza_clearGeocodeCache = function(){ try{ localStorage.removeItem(geocodeCacheKey); alert('Cache limpo'); }catch(e){ alert('Erro ao limpar cache'); } };
+
   })();
   </script>
 </body>
