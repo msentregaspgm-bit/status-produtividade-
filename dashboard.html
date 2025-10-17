@@ -5,7 +5,11 @@
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>Souza Transportes</title>
 
-  <!-- Leaflet, Bootstrap, Chart.js -->
+  <!-- PWA manifest -->
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#2e7d32">
+
+  <!-- Bootstrap, Leaflet, Chart.js -->
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" defer></script>
@@ -28,15 +32,17 @@
     .card-kpi{ border-radius:10px; background:var(--card-bg); box-shadow:0 3px 10px rgba(0,0,0,0.06); padding:12px; }
     .kpi-label{ font-size:0.85rem; color:var(--muted); }
     .kpi-value{ font-weight:700; color:var(--verde-souza); font-size:1.3rem; }
-    #map{ height:420px; border-radius:12px; margin-bottom:12px; position:relative; }
+    #map{ height:520px; border-radius:12px; margin-bottom:12px; position:relative; }
     .chart-card{ padding:12px; border-radius:10px; background:var(--card-bg); box-shadow:0 3px 10px rgba(0,0,0,0.06); }
     canvas{ max-height:300px !important; height:300px !important; width:100% !important; }
     .section{ display:none; }
     .section.active{ display:block; }
     .footer{ text-align:center; color:var(--muted); margin-top:14px; font-size:0.85rem; }
-    @media(max-width:768px){ #map{ height:320px; } h1{ font-size:18px; } canvas{ max-height:260px !important; height:260px !important; } }
+    @media(max-width:768px){ #map{ height:420px; } h1{ font-size:18px; } canvas{ max-height:260px !important; height:260px !important; } }
 
-    .truck-div { display:inline-block; color:#fff; padding:3px 7px; border-radius:6px; font-size:12px; box-shadow:0 1px 4px rgba(0,0,0,0.4); white-space:nowrap; }
+    /* truck label style used for divIcon */
+    .truck-label { display:inline-flex; align-items:center; gap:6px; padding:4px 8px; border-radius:8px; font-size:12px; font-weight:600; background:rgba(255,255,255,0.9); box-shadow:0 1px 3px rgba(0,0,0,0.18); white-space:nowrap; }
+    .truck-label .truck-emoji { margin-right:4px; }
     .leaflet-control.custom-fullscreen a { background:#fff; padding:6px; border-radius:6px; display:inline-block; box-shadow:0 1px 3px rgba(0,0,0,0.2); }
     .loading-overlay { position:fixed; left:0; right:0; top:0; bottom:0; display:flex; align-items:center; justify-content:center; background:rgba(255,255,255,0.6); z-index:1200; font-size:1.1rem; color:#333; }
     body.dark-mode .loading-overlay { background:rgba(0,0,0,0.6); color:#eee; }
@@ -48,7 +54,7 @@
       <img src="logo.png" alt="Logo Souza" class="logo-left">
       <div class="title-wrap">
         <h1>Souza Transportes</h1>
-        <div id="appLegend" class="app-legend">🚛 Status da Frota</div>
+        <div id="appLegend" class="app-legend">🚛 Status da Frota — Região: Pará & Maranhão</div>
       </div>
       <div style="text-align:right">
         <button id="refreshBtnTop" class="btn btn-success btn-icon" title="Atualizar">🔄</button>
@@ -62,6 +68,7 @@
       <button id="btnVolume" class="btn btn-outline-primary nav-btn" title="Volume Entregue">📊</button>
     </div>
 
+    <!-- STATUS -->
     <div id="sectionStatus" class="section active">
       <div class="mb-2">
         <div style="font-weight:600; margin-bottom:6px;">Filtrar por Status, Produto e Destino:</div>
@@ -79,6 +86,7 @@
       <div id="frotaContainer" class="row g-3 mt-2"></div>
     </div>
 
+    <!-- PRODUTIVIDADE -->
     <div id="sectionProd" class="section">
       <div class="row g-3 mb-2">
         <div class="col-md-3"><div class="card card-kpi"><div class="kpi-label">Faturamento Total</div><div id="kpiFaturamento" class="kpi-value">--</div></div></div>
@@ -93,6 +101,7 @@
       </div>
     </div>
 
+    <!-- VOLUME -->
     <div id="sectionVolume" class="section">
       <div class="row g-3 mb-2">
         <div class="col-md-4"><div class="card card-kpi"><div class="kpi-label">Entregue</div><div id="kpiVolumeTotal" class="kpi-value">--</div></div></div>
@@ -108,19 +117,18 @@
 
   <script>
   (function(){
-    // ===== CONFIG =====
+    // CONFIG
     const scriptURL = "https://script.google.com/macros/s/AKfycbyZDvHD4CCG4xAbuIjckNApANUkDow8uifF96C1R5DRKd4soQJVZKvNoWJ6hLDPyc5n/exec";
-    const geocodeCacheKey = 'souza_geocode_cache_v1';
+    const geocodeCacheKey = 'souza_geocode_cache_v2';
     const fmtBRL_noCents = v => new Intl.NumberFormat('pt-BR',{style:'currency',currency:'BRL',maximumFractionDigits:0}).format(Math.round(v));
-    const fmtNum1 = v => (typeof v === 'number' ? v.toLocaleString('pt-BR',{maximumFractionDigits:1}) : v);
 
-    // ===== STATE =====
+    // STATE
     let map = null;
     let markers = [];
     let dadosFrota = [];
     let charts = [];
 
-    // ===== HELPERS =====
+    // HELPERS
     function toNumber(v){
       if(v === null || v === undefined) return 0;
       if(typeof v === 'number') return v;
@@ -134,7 +142,7 @@
     function loadGeocodeCache(){ try{ const raw = localStorage.getItem(geocodeCacheKey); return raw ? JSON.parse(raw) : {}; }catch(e){ return {}; } }
     function saveGeocodeCache(c){ try{ localStorage.setItem(geocodeCacheKey, JSON.stringify(c)); }catch(e){} }
 
-    // safe fetch + parse JSON with improved errors & timeout
+    // safe fetch + parse JSON
     async function fetchJsonSafe(url, opts = {}, timeout = 12000){
       const controller = new AbortController();
       const id = setTimeout(()=>controller.abort(), timeout);
@@ -142,31 +150,30 @@
         const resp = await fetch(url, Object.assign({}, opts, { signal: controller.signal }));
         clearTimeout(id);
         if(!resp.ok) throw new Error('HTTP '+resp.status+' - '+resp.statusText);
-        // try parse JSON, if fails provide readable error
         const txt = await resp.text();
-        try{
-          return JSON.parse(txt);
-        }catch(e){
-          throw new Error('Resposta não é JSON: ' + (txt.slice(0,200)));
-        }
+        try{ return JSON.parse(txt); }catch(e){ throw new Error('Resposta não é JSON: ' + txt.slice(0,200)); }
       }catch(err){
         clearTimeout(id);
         throw err;
       }
     }
 
-    // ===== MAP =====
+    // MAP init - center on Pará / Maranhão region, zoom 4
     function initMap(){
       if(map) return;
-      map = L.map('map', { preferCanvas: true }).setView([-15.78, -47.93], 5);
+      // center roughly between Pará and Maranhão
+      map = L.map('map', { preferCanvas: true }).setView([-4.5, -48.5], 4);
 
+      // Satellite imagery (Esri) + OSM labels for roads/cities to mimic Google hybrid
       const esriSat = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', { attribution: 'Tiles © Esri' });
       const osmLabels = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '&copy; OpenStreetMap contributors' });
 
       const hybrid = L.layerGroup([esriSat, osmLabels]).addTo(map);
-      const osm = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png');
-      L.control.layers({ "🛰 Satélite (com rótulos)": hybrid, "🗺 OpenStreetMap": osm }).addTo(map);
+      const street = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png');
 
+      L.control.layers({ "🛰 Satélite (com rótulos)": hybrid, "🗺 OpenStreetMap": street }).addTo(map);
+
+      // custom fullscreen control
       const FullCtl = L.Control.extend({
         onAdd: function(map){
           const container = L.DomUtil.create('div','leaflet-control custom-fullscreen');
@@ -176,12 +183,17 @@
         }
       });
       map.addControl(new FullCtl({ position: 'topleft' }));
+
       document.addEventListener('click', function(e){
         if(e.target && e.target.id === 'btnMapFull'){
           e.preventDefault();
           toggleFullscreen(document.getElementById('map'));
         }
       });
+
+      // when entering/exiting fullscreen, invalidate size to redraw map
+      document.addEventListener('fullscreenchange', ()=> setTimeout(()=> map.invalidateSize(), 300));
+      window.addEventListener('resize', ()=> setTimeout(()=> map.invalidateSize(), 200));
     }
 
     function toggleFullscreen(elem){
@@ -192,26 +204,35 @@
       }
     }
 
-    function createTruckMarker(lat, lon, plate, firstName, status, product, destino){
+    // create marker: label uses column 'Frota' with lightweight visual, emoji outside color
+    function createTruckMarker(lat, lon, frotaLabel, status, popupHtml){
       if(!map || isNaN(lat) || isNaN(lon)) return null;
-      const lower = (status||'').toLowerCase();
-      const bg = lower.includes('carregado') ? '#2e7d32' : (lower.includes('descarregando') ? '#ff9800' : '#d32f2f');
-      const label = `${plate || ''} - ${firstName || ''}`.trim();
-      const html = `<div class="truck-div" style="background:${bg};">🚛 ${label}</div>`;
-      const icon = L.divIcon({ html, className:'truck-div-icon', iconSize:[Math.min(220,label.length*8+40),28], iconAnchor:[10,14] });
+      // choose color by status
+      const s = (status||'').toLowerCase();
+      const borderColor = s.includes('carregado') ? '#2e7d32' : (s.includes('descarregando') ? '#ff9800' : '#d32f2f');
+      const textColor = borderColor;
+      const safeLabel = String(frotaLabel||'').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+      // label: emoji outside colored stroke + text colored + border colored; light background
+      const html = `
+        <div class="truck-label" style="border-color:${borderColor}; background: rgba(255,255,255,0.92);">
+          <span class="truck-emoji">🚛</span>
+          <span style="color:${textColor};">${safeLabel}</span>
+        </div>`;
+      const icon = L.divIcon({ html, className:'truck-div-icon', iconSize: [Math.min(320, (safeLabel.length*8)+70),30], iconAnchor: [12,15] });
       const m = L.marker([lat,lon], { icon }).addTo(map);
-      const popupHtml = `<strong>${label}</strong><br>
-        <small><b>Status:</b> ${status || '-'}</small><br>
-        <small><b>Produto:</b> ${product || '-'}</small><br>
-        <small><b>Destino:</b> ${destino || '-'}</small>`;
-      m.bindPopup(popupHtml);
+      if(popupHtml) m.bindPopup(popupHtml);
       markers.push(m);
       return m;
     }
 
-    function focusTruck(lat, lon){
-      if(!map || isNaN(lat) || isNaN(lon)) return;
-      map.setView([lat, lon], 12, { animate:true });
+    // jitter to separate markers within same base coordinates (preserve cluster visually)
+    function jitterLatLng(lat, lon, index){
+      // small jitter in degrees (~ up to roughly 0.01 deg ~ 1km)
+      const magnitude = 0.01;
+      const angle = (index * 137.5) % 360;
+      const rad = angle * Math.PI / 180;
+      const r = (index * 0.0008) + (Math.random() * magnitude * 0.35);
+      return [lat + Math.sin(rad)*r, lon + Math.cos(rad)*r];
     }
 
     async function geocodeCity(city){
@@ -222,7 +243,8 @@
       const q = `${key}, Brasil`;
       const url = `https://nominatim.openstreetmap.org/search?format=json&limit=1&q=${encodeURIComponent(q)}`;
       try{
-        await new Promise(r=>setTimeout(r, 220));
+        // gentle throttle to avoid rate-limits
+        await new Promise(r=>setTimeout(r, 180));
         const resp = await fetch(url, { headers:{ 'Accept-Language':'pt-BR' } });
         if(!resp.ok) return null;
         const arr = await resp.json();
@@ -281,49 +303,61 @@
 
         cont.innerHTML = '';
         const bounds = [];
-
+        // group by position (text) so multiple trucks at same pos get jittered
+        const groups = {};
         for(const r of dadosFrota){
-          const nomeFull = r.Frota || r.frota || r.Nome || r.Matricula || '';
-          const plate = extractPlate(r);
-          const firstName = extractFirstName(r) || (nomeFull ? String(nomeFull).split(' ')[0] : '');
-          const status = r.Status || '';
-          const produto = r.Produto || r.PRODUTO || '-';
           const posicao = r['Posição'] || r.Posicao || r.Local || '';
-          const destino = r.Destino || '-';
+          const key = String(posicao).trim() || `__row_${Math.random().toString(36).slice(2,8)}`;
+          if(!groups[key]) groups[key] = [];
+          groups[key].push(r);
+        }
 
-          const card = document.createElement('div');
-          card.className = 'col-6 col-md-3';
-          card.innerHTML = `<div class="card p-2">
-            <h6>${plate ? plate + ' - ' + firstName : (nomeFull || 'Veículo')}</h6>
-            <p class="small text-muted mb-1">${status}</p>
-            <p class="mb-0"><strong>Produto:</strong> ${produto}</p>
-            <p class="mb-0"><strong>Posição:</strong> ${posicao || '-'}</p>
-            <p class="mb-0"><strong>Destino:</strong> ${destino}</p>
-            <div class="mt-2"><button class="btn btn-sm btn-outline-success btn-map" data-pos="${posicao}" data-plate="${plate}" data-name="${firstName}">📍 Mapa</button></div>
-          </div>`;
-          cont.appendChild(card);
+        // process each group (geocode once per unique posicao)
+        for(const [posKey, items] of Object.entries(groups)){
+          const posText = items[0]['Posição'] || items[0].Posicao || items[0].Local || '';
+          let geo = null;
+          if(posText) geo = await geocodeCity(posText);
+          for(let i=0;i<items.length;i++){
+            const r = items[i];
+            const frotaLabel = r.Frota || r.frota || r.Nome || r.Matricula || '';
+            const plate = extractPlate(r);
+            const firstName = extractFirstName(r) || (frotaLabel ? String(frotaLabel).split(' ')[0] : '');
+            const status = r.Status || '';
+            const produto = r.Produto || r.PRODUTO || '-';
+            const posicao = r['Posição'] || r.Posicao || r.Local || '';
+            const destino = r.Destino || '-';
 
-          if(posicao){
-            const geo = await geocodeCity(posicao);
+            const card = document.createElement('div');
+            card.className = 'col-6 col-md-3';
+            card.innerHTML = `<div class="card p-2">
+              <h6>${frotaLabel ? frotaLabel : (plate ? plate + ' - ' + firstName : 'Veículo')}</h6>
+              <p class="small text-muted mb-1">${status}</p>
+              <p class="mb-0"><strong>Produto:</strong> ${produto}</p>
+              <p class="mb-0"><strong>Posição:</strong> ${posicao || '-'}</p>
+              <p class="mb-0"><strong>Destino:</strong> ${destino}</p>
+              <div class="mt-2"><button class="btn btn-sm btn-outline-success btn-map" data-pos="${posicao}" data-frota="${encodeURIComponent(frotaLabel)}">📍 Mapa</button></div>
+            </div>`;
+            cont.appendChild(card);
+
             if(geo){
-              const m = createTruckMarker(geo.lat, geo.lon, plate || '', firstName || '', status, produto, destino);
-              if(m) bounds.push([geo.lat, geo.lon]);
+              const [lat, lon] = jitterLatLng(geo.lat, geo.lon, i);
+              const popupHtml = `<strong>${frotaLabel}</strong><br><small><b>Placa:</b> ${plate || '-'}<br><b>Motorista:</b> ${firstName || '-'}<br><b>Status:</b> ${status || '-'}<br><b>Produto:</b> ${produto || '-'}<br><b>Destino:</b> ${destino || '-'}<br><b>Posição:</b> ${posicao || '-'}</small>`;
+              const m = createTruckMarker(lat, lon, frotaLabel, status, popupHtml);
+              if(m) bounds.push([lat, lon]);
               const btn = card.querySelector('.btn-map');
-              if(btn) btn.addEventListener('click', ()=>{ focusTruck(geo.lat, geo.lon); try{ m.openPopup(); }catch(e){} });
+              if(btn) btn.addEventListener('click', ()=>{ map.setView([lat, lon], 12); try{ m.openPopup(); }catch(e){} });
             } else {
               const btn = card.querySelector('.btn-map');
               if(btn) btn.addEventListener('click', ()=> alert('Localização não encontrada para: ' + posicao));
             }
-          } else {
-            const btn = card.querySelector('.btn-map');
-            if(btn) btn.addEventListener('click', ()=> alert('Posição não informada para este veículo.'));
           }
         }
 
-        if(bounds.length) try{ map.fitBounds(bounds, { padding:[60,60] }); }catch(e){}
+        if(bounds.length) try{ map.fitBounds(bounds, { padding:[80,80] }); }catch(e){}
       }catch(err){
         console.error('Erro buscarDados', err);
         document.getElementById('frotaContainer').innerHTML = "<p class='text-danger text-center'>Erro ao carregar frota. Veja o console para detalhes.</p>";
+        alert('Falha ao carregar dados de status. Verifique o endpoint do Google Script.');
       } finally {
         showLoadingOverlay(false);
       }
@@ -347,49 +381,59 @@
       const cont = document.getElementById('frotaContainer');
       cont.innerHTML = '';
       const bounds=[];
-
+      // group by pos again
+      const groups = {};
       for(const r of filtrados){
-        const nomeFull = r.Frota || r.frota || r.Nome || '';
-        const plate = extractPlate(r);
-        const firstName = extractFirstName(r) || (nomeFull ? String(nomeFull).split(' ')[0] : '');
-        const status = r.Status || '';
-        const produto = r.Produto || r.PRODUTO || '-';
         const posicao = r['Posição'] || r.Posicao || r.Local || '';
-        const destino = r.Destino || '-';
+        const key = String(posicao).trim() || `__row_${Math.random().toString(36).slice(2,8)}`;
+        if(!groups[key]) groups[key] = [];
+        groups[key].push(r);
+      }
 
-        const card = document.createElement('div');
-        card.className = 'col-6 col-md-3';
-        card.innerHTML = `<div class="card p-2">
-          <h6>${plate ? plate + ' - ' + firstName : (nomeFull || 'Veículo')}</h6>
-          <p class="small text-muted mb-1">${status}</p>
-          <p class="mb-0"><strong>Produto:</strong> ${produto}</p>
-          <p class="mb-0"><strong>Posição:</strong> ${posicao || '-'}</p>
-          <p class="mb-0"><strong>Destino:</strong> ${destino}</p>
-          <div class="mt-2"><button class="btn btn-sm btn-outline-success btn-map" data-pos="${posicao}" data-plate="${plate}" data-name="${firstName}">📍 Mapa</button></div>
-        </div>`;
-        cont.appendChild(card);
+      for(const [posKey, items] of Object.entries(groups)){
+        const posText = items[0]['Posição'] || items[0].Posicao || items[0].Local || '';
+        let geo = null;
+        if(posText) geo = await geocodeCity(posText);
+        for(let i=0;i<items.length;i++){
+          const r = items[i];
+          const frotaLabel = r.Frota || r.frota || r.Nome || r.Matricula || '';
+          const plate = extractPlate(r);
+          const firstName = extractFirstName(r) || (frotaLabel ? String(frotaLabel).split(' ')[0] : '');
+          const status = r.Status || '';
+          const produto = r.Produto || r.PRODUTO || '-';
+          const posicao = r['Posição'] || r.Posicao || r.Local || '';
+          const destino = r.Destino || '-';
 
-        if(posicao){
-          const geo = await geocodeCity(posicao);
+          const card = document.createElement('div');
+          card.className = 'col-6 col-md-3';
+          card.innerHTML = `<div class="card p-2">
+            <h6>${frotaLabel ? frotaLabel : (plate ? plate + ' - ' + firstName : 'Veículo')}</h6>
+            <p class="small text-muted mb-1">${status}</p>
+            <p class="mb-0"><strong>Produto:</strong> ${produto}</p>
+            <p class="mb-0"><strong>Posição:</strong> ${posicao || '-'}</p>
+            <p class="mb-0"><strong>Destino:</strong> ${destino}</p>
+            <div class="mt-2"><button class="btn btn-sm btn-outline-success btn-map" data-pos="${posicao}" data-frota="${encodeURIComponent(frotaLabel)}">📍 Mapa</button></div>
+          </div>`;
+          cont.appendChild(card);
+
           if(geo){
-            const m = createTruckMarker(geo.lat, geo.lon, plate || '', firstName || '', status, produto, destino);
-            if(m) bounds.push([geo.lat, geo.lon]);
+            const [lat, lon] = jitterLatLng(geo.lat, geo.lon, i);
+            const popupHtml = `<strong>${frotaLabel}</strong><br><small><b>Placa:</b> ${plate || '-'}<br><b>Motorista:</b> ${firstName || '-'}<br><b>Status:</b> ${status || '-'}<br><b>Produto:</b> ${produto || '-'}<br><b>Destino:</b> ${destino || '-'}<br><b>Posição:</b> ${posicao || '-'}</small>`;
+            const m = createTruckMarker(lat, lon, frotaLabel, status, popupHtml);
+            if(m) bounds.push([lat, lon]);
             const btn = card.querySelector('.btn-map');
-            if(btn) btn.addEventListener('click', ()=>{ focusTruck(geo.lat, geo.lon); try{ m.openPopup(); }catch(e){} });
+            if(btn) btn.addEventListener('click', ()=>{ map.setView([lat, lon], 12); try{ m.openPopup(); }catch(e){} });
           } else {
             const btn = card.querySelector('.btn-map');
             if(btn) btn.addEventListener('click', ()=> alert('Localização não encontrada para: ' + posicao));
           }
-        } else {
-          const btn = card.querySelector('.btn-map');
-          if(btn) btn.addEventListener('click', ()=> alert('Posição não informada para este veículo.'));
         }
       }
 
-      if(bounds.length) try{ map.fitBounds(bounds, { padding:[60,60] }); }catch(e){}
+      if(bounds.length) try{ map.fitBounds(bounds, { padding:[80,80] }); }catch(e){}
     }
 
-    // ===== PRODUTIVIDADE =====
+    // PRODUTIVIDADE
     async function loadProdutividade(){
       clearCharts();
       document.getElementById('kpiFaturamento').innerText = 'Carregando...';
@@ -462,7 +506,7 @@
       }
     }
 
-    // ===== VOLUME =====
+    // VOLUME
     async function loadVolume(){
       clearCharts();
       document.getElementById('kpiVolumeTotal').innerText = '--';
@@ -524,7 +568,7 @@
       }
     }
 
-    // ===== UI =====
+    // UI
     const btnStatus = document.getElementById('btnStatus');
     const btnProd = document.getElementById('btnProd');
     const btnVolume = document.getElementById('btnVolume');
@@ -533,7 +577,7 @@
     const appLegend = document.getElementById('appLegend');
 
     function setLegend(key){
-      if(key==='status') appLegend.innerText = "🚛 Status da Frota";
+      if(key==='status') appLegend.innerText = "🚛 Status da Frota — Região: Pará & Maranhão";
       if(key==='prod') appLegend.innerText = "📈 Painel de Produtividade";
       if(key==='volume') appLegend.innerText = "📊 Relatório de Volume Entregue";
     }
