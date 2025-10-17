@@ -59,7 +59,6 @@
   </div>
 
   <main class="container-main">
-    <!-- STATUS -->
     <section id="section-status" class="section active">
       <div id="mapWrapper" style="position:relative;">
         <div id="map"></div>
@@ -71,7 +70,6 @@
       </div>
     </section>
 
-    <!-- PRODUTIVIDADE -->
     <section id="section-prod" class="section">
       <div style="display:flex;gap:12px;flex-wrap:wrap;margin-bottom:12px;">
         <div style="flex:1;min-width:150px;"><div class="card-kpi"><div class="kpi-label">Faturamento Total</div><div id="fatTotal" class="kpi-value">--</div></div></div>
@@ -86,7 +84,6 @@
       </div>
     </section>
 
-    <!-- VOLUME -->
     <section id="section-vol" class="section">
       <div style="margin-bottom:12px;">
         <div class="card-kpi"><div class="kpi-label">Entregue (total)</div><div id="volTotal" class="kpi-value">--</div></div>
@@ -132,7 +129,7 @@
         document.getElementById('comTotal').innerText=fmtBRL(com);
         document.getElementById('pesoTotal').innerText=fmtNum(peso,1)+' ton';
         document.getElementById('viagensTotal').innerText=viagens;
-        charts.forEach(c=>{try{c.destroy();}catch{}});
+        charts.forEach(c=>{try{c.destroy();}catch{});
         charts=[];
         const pesoPairs=Object.entries(byPeso).sort((a,b)=>b[1]-a[1]);
         const comPairs=Object.entries(byCom).sort((a,b)=>b[1]-a[1]);
