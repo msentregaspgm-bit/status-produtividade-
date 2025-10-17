@@ -1,11 +1,9 @@
-// Improved service-worker with broader caching and offline fallback
-const CACHE_NAME = "souza-dashboard-v3";
+const CACHE_NAME = "souza-dashboard-v4";
 const urlsToCache = [
   "dashboard.html",
   "logo.png",
   "manifest.json",
   "offline.html",
-  // CDNs (cache these requests too)
   "https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css",
   "https://unpkg.com/leaflet@1.9.4/dist/leaflet.css",
   "https://unpkg.com/leaflet@1.9.4/dist/leaflet.js",
@@ -32,11 +30,9 @@ self.addEventListener("activate", event => {
 self.addEventListener("fetch", event => {
   const req = event.request;
 
-  // network-first for API script (try network but fallback to cache)
   if(req.url.includes("script.google.com/macros")){
     event.respondWith(
       fetch(req).then(resp => {
-        // clone into cache if ok
         if(resp && resp.ok){
           const copy = resp.clone();
           caches.open(CACHE_NAME).then(cache => cache.put(req, copy));
@@ -47,11 +43,9 @@ self.addEventListener("fetch", event => {
     return;
   }
 
-  // for navigation requests, try network then fallback to cache -> offline page
   if(req.mode === 'navigate'){
     event.respondWith(
       fetch(req).then(resp => {
-        // store copy
         const copy = resp.clone();
         caches.open(CACHE_NAME).then(cache => cache.put(req, copy));
         return resp;
@@ -60,14 +54,10 @@ self.addEventListener("fetch", event => {
     return;
   }
 
-  // for other resources, serve from cache then network, and add to cache
   event.respondWith(
     caches.match(req).then(cacheResp => {
       return cacheResp || fetch(req).then(networkResp => {
-        try{
-          const copy = networkResp.clone();
-          caches.open(CACHE_NAME).then(cache => cache.put(req, copy));
-        }catch(e){}
+        try{ const copy = networkResp.clone(); caches.open(CACHE_NAME).then(cache => cache.put(req, copy)); }catch(e){}
         return networkResp;
       }).catch(()=>caches.match("offline.html"));
     })

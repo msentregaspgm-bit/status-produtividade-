@@ -1,11 +1,12 @@
 {
   "name": "Souza Transportes",
   "short_name": "Souza",
-  "start_url": "dashboard.html",
+  "start_url": "./dashboard.html",
   "display": "standalone",
   "background_color": "#2e7d32",
   "theme_color": "#2e7d32",
   "orientation": "portrait-primary",
+  "scope": "./",
   "icons": [
     {
       "src": "logo.png",
