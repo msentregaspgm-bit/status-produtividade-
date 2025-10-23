@@ -1,285 +1,239 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Souza Transportes</title>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Souza Transportes</title>
 
-  <!-- PWA manifest -->
-  <link rel="manifest" href="manifest.json">
-  <meta name="theme-color" content="#2e7d32">
+<!-- PWA manifest -->
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#2e7d32">
 
-  <!-- Bootstrap, Leaflet, Chart.js -->
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" defer></script>
-  <script src="https://cdn.jsdelivr.net/npm/chart.js" defer></script>
-  <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2" defer></script>
+<!-- Bootstrap, Leaflet, Chart.js -->
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" defer></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js" defer></script>
+<script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2" defer></script>
 
-  <style>
-    :root{ --verde-souza:#2e7d32; --bg:#ffffff; --card-bg:#ffffff; --muted:#6c757d; }
-    body{ background:var(--bg); color:#222; font-family:Inter, "Segoe UI", Roboto, Arial, sans-serif; padding:12px; transition:background .25s,color .25s; }
-    body.dark-mode{ background:#111; color:#eee; }
-    header{ display:flex; align-items:center; justify-content:space-between; gap:8px; flex-wrap:wrap; margin-bottom:8px; }
-    .logo-left{ width:56px; height:auto; border-radius:6px; }
-    .title-wrap{ text-align:center; flex:1; min-width:180px; }
-    h1{ margin:0; color:var(--verde-souza); font-weight:700; font-size:20px; }
-    .app-legend{ text-align:center; font-size:0.95rem; color:var(--muted); margin-top:4px; }
-    .btn-icon{ border-radius:50%; width:40px; height:40px; display:flex; align-items:center; justify-content:center; }
-    .topbar{ display:flex; gap:8px; justify-content:center; align-items:center; flex-wrap:wrap; margin:12px 0; }
-    .nav-btn{ width:44px; height:44px; padding:0; border-radius:8px; display:flex; align-items:center; justify-content:center; }
-    .nav-btn.active{ box-shadow: inset 0 3px 6px rgba(0,0,0,0.12); }
-    .card-kpi{ border-radius:10px; background:var(--card-bg); box-shadow:0 3px 10px rgba(0,0,0,0.06); padding:12px; }
-    .kpi-label{ font-size:0.85rem; color:var(--muted); }
-    .kpi-value{ font-weight:700; color:var(--verde-souza); font-size:1.3rem; }
-    #map{ height:520px; border-radius:12px; margin-bottom:12px; position:relative; }
-    .chart-card{ padding:12px; border-radius:10px; background:var(--card-bg); box-shadow:0 3px 10px rgba(0,0,0,0.06); }
-    canvas{ max-height:300px !important; height:300px !important; width:100% !important; }
-    .section{ display:none; }
-    .section.active{ display:block; }
-    .footer{ text-align:center; color:var(--muted); margin-top:14px; font-size:0.85rem; }
-    @media(max-width:768px){ #map{ height:420px; } h1{ font-size:18px; } canvas{ max-height:260px !important; height:260px !important; } }
-
-    .truck-label { display:inline-flex; align-items:center; gap:6px; padding:4px 8px; border-radius:8px; font-size:12px; font-weight:600; background:rgba(255,255,255,0.92); box-shadow:0 1px 3px rgba(0,0,0,0.18); white-space:nowrap; }
-    .truck-label .truck-emoji { margin-right:4px; }
-    .leaflet-control.custom-fullscreen a { background:#fff; padding:6px; border-radius:6px; display:inline-block; box-shadow:0 1px 3px rgba(0,0,0,0.2); }
-    .loading-overlay { position:fixed; left:0; right:0; top:0; bottom:0; display:flex; align-items:center; justify-content:center; background:rgba(255,255,255,0.6); z-index:1200; font-size:1.1rem; color:#333; }
-    body.dark-mode .loading-overlay { background:rgba(0,0,0,0.6); color:#eee; }
-  </style>
+<style>
+  /* mantém o estilo original do seu dashboard */
+  :root{ --verde-souza:#2e7d32; --bg:#ffffff; --card-bg:#ffffff; --muted:#6c757d; }
+  body{ background:var(--bg); color:#222; font-family:Inter, "Segoe UI", Roboto, Arial, sans-serif; padding:12px; transition:background .25s,color .25s; }
+  body.dark-mode{ background:#111; color:#eee; }
+  header{ display:flex; align-items:center; justify-content:space-between; gap:8px; flex-wrap:wrap; margin-bottom:8px; }
+  .logo-left{ width:56px; height:auto; border-radius:6px; }
+  .title-wrap{ text-align:center; flex:1; min-width:180px; }
+  h1{ margin:0; color:var(--verde-souza); font-weight:700; font-size:20px; }
+  .app-legend{ text-align:center; font-size:0.95rem; color:var(--muted); margin-top:4px; }
+  .btn-icon{ border-radius:50%; width:40px; height:40px; display:flex; align-items:center; justify-content:center; }
+  .topbar{ display:flex; gap:8px; justify-content:center; align-items:center; flex-wrap:wrap; margin:12px 0; }
+  .nav-btn{ width:44px; height:44px; padding:0; border-radius:8px; display:flex; align-items:center; justify-content:center; }
+  .nav-btn.active{ box-shadow: inset 0 3px 6px rgba(0,0,0,0.12); }
+  .card-kpi{ border-radius:10px; background:var(--card-bg); box-shadow:0 3px 10px rgba(0,0,0,0.06); padding:12px; }
+  .kpi-label{ font-size:0.85rem; color:var(--muted); }
+  .kpi-value{ font-weight:700; color:var(--verde-souza); font-size:1.3rem; }
+  #map{ height:520px; border-radius:12px; margin-bottom:12px; position:relative; }
+  .chart-card{ padding:12px; border-radius:10px; background:var(--card-bg); box-shadow:0 3px 10px rgba(0,0,0,0.06); }
+  canvas{ max-height:300px !important; height:300px !important; width:100% !important; }
+  .section{ display:none; }
+  .section.active{ display:block; }
+  .footer{ text-align:center; color:var(--muted); margin-top:14px; font-size:0.85rem; }
+  @media(max-width:768px){ #map{ height:420px; } h1{ font-size:18px; } canvas{ max-height:260px !important; height:260px !important; } }
+  .truck-label { display:inline-flex; align-items:center; gap:6px; padding:4px 8px; border-radius:8px; font-size:12px; font-weight:600; background:rgba(255,255,255,0.92); box-shadow:0 1px 3px rgba(0,0,0,0.18); white-space:nowrap; }
+  .truck-label .truck-emoji { margin-right:4px; }
+  .leaflet-control.custom-fullscreen a { background:#fff; padding:6px; border-radius:6px; display:inline-block; box-shadow:0 1px 3px rgba(0,0,0,0.2); }
+  .loading-overlay { position:fixed; left:0; right:0; top:0; bottom:0; display:flex; align-items:center; justify-content:center; background:rgba(255,255,255,0.6); z-index:1200; font-size:1.1rem; color:#333; }
+  body.dark-mode .loading-overlay { background:rgba(0,0,0,0.6); color:#eee; }
+</style>
 </head>
 <body>
-  <div class="container">
-    <header>
-      <img src="logo.png" alt="Logo Souza" class="logo-left">
-      <div class="title-wrap">
-        <h1>Souza Transportes</h1>
-        <div id="appLegend" class="app-legend">🚛 Status da Frota — Região: Pará & Maranhão</div>
-      </div>
-      <div style="text-align:right">
-        <button id="refreshBtnTop" class="btn btn-success btn-icon" title="Atualizar">🔄</button>
-        <button id="darkModeTop" class="btn btn-outline-dark btn-icon" title="Modo Escuro">🌙</button>
-      </div>
-    </header>
+<div class="container">
+<header>
+  <img src="logo.png" alt="Logo Souza" class="logo-left">
+  <div class="title-wrap">
+    <h1>Souza Transportes</h1>
+    <div id="appLegend" class="app-legend">🚛 Status da Frota — Região: Pará & Maranhão</div>
+  </div>
+  <div style="text-align:right">
+    <button id="refreshBtnTop" class="btn btn-success btn-icon" title="Atualizar">🔄</button>
+    <button id="darkModeTop" class="btn btn-outline-dark btn-icon" title="Modo Escuro">🌙</button>
+  </div>
+</header>
 
-    <div class="topbar">
-      <button id="btnStatus" class="btn btn-outline-success nav-btn active" title="Status Frota">🚛</button>
-      <button id="btnProd" class="btn btn-outline-warning nav-btn" title="Produtividade">📈</button>
-      <button id="btnVolume" class="btn btn-outline-primary nav-btn" title="Volume Entregue">📊</button>
-      <button id="btnPneus" class="btn btn-outline-dark nav-btn" title="Pneus" onclick="window.open('https://pneus-souza.vercel.app/', '_blank')">
-        <img src="logoPneu.png" alt="Pneu" width="24" height="24">
-      </button>
+<div class="topbar">
+  <button id="btnStatus" class="btn btn-outline-success nav-btn active" title="Status Frota">🚛</button>
+  <button id="btnProd" class="btn btn-outline-warning nav-btn" title="Produtividade">📈</button>
+  <button id="btnVolume" class="btn btn-outline-primary nav-btn" title="Volume Entregue">📊</button>
+  <button id="btnPneus" class="btn btn-outline-dark nav-btn" title="Pneus" onclick="window.open('https://pneus-souza.vercel.app/', '_blank')">
+    <img src="logoPneu.png" alt="Pneu" width="24" height="24">
+  </button>
+</div>
+
+<!-- STATUS -->
+<div id="sectionStatus" class="section active">
+  <div class="mb-2">
+    <div style="font-weight:600; margin-bottom:6px;">Filtrar por Status, Produto e Destino:</div>
+    <div class="d-flex gap-2 flex-wrap">
+      <select id="filtroStatus" class="form-select form-select-sm" style="width:220px"><option value="">Todos os Status</option></select>
+      <select id="filtroProduto" class="form-select form-select-sm" style="width:220px"><option value="">Todos os Produtos</option></select>
+      <select id="filtroDestino" class="form-select form-select-sm" style="width:220px"><option value="">Todos os Destinos</option></select>
     </div>
-
-    <!-- STATUS -->
-    <div id="sectionStatus" class="section active">
-      <div class="mb-2">
-        <div style="font-weight:600; margin-bottom:6px;">Filtrar por Status, Produto e Destino:</div>
-        <div class="d-flex gap-2 flex-wrap">
-          <select id="filtroStatus" class="form-select form-select-sm" style="width:220px"><option value="">Todos os Status</option></select>
-          <select id="filtroProduto" class="form-select form-select-sm" style="width:220px"><option value="">Todos os Produtos</option></select>
-          <select id="filtroDestino" class="form-select form-select-sm" style="width:220px"><option value="">Todos os Destinos</option></select>
-        </div>
-      </div>
-
-      <div id="resumoContainer" class="card card-kpi mb-2"><div id="resumoTexto">Carregando dados...</div></div>
-      <div id="map"></div>
-      <div id="frotaContainer" class="row g-3 mt-2"></div>
-    </div>
-
-    <!-- PRODUTIVIDADE -->
-    <div id="sectionProd" class="section">
-      <div class="row g-3 mb-2">
-        <div class="col-md-3"><div class="card card-kpi"><div class="kpi-label">Faturamento Total</div><div id="kpiFaturamento" class="kpi-value">--</div></div></div>
-        <div class="col-md-3"><div class="card card-kpi"><div class="kpi-label">Comissão Total</div><div id="kpiComissao" class="kpi-value">--</div></div></div>
-        <div class="col-md-3"><div class="card card-kpi"><div class="kpi-label">Peso Total (ton)</div><div id="kpiPesoTotal" class="kpi-value">--</div></div></div>
-        <div class="col-md-3"><div class="card card-kpi"><div class="kpi-label">Viagens</div><div id="kpiViagensTotal" class="kpi-value">--</div></div></div>
-      </div>
-
-      <div class="row g-3">
-        <div class="col-md-6"><div class="chart-card"><h6>Peso por Motorista</h6><canvas id="chartPesoMotorista"></canvas></div></div>
-        <div class="col-md-6"><div class="chart-card"><h6>Comissão por Motorista</h6><canvas id="chartComissaoMotorista"></canvas></div></div>
-      </div>
-    </div>
-
-    <!-- VOLUME -->
-    <div id="sectionVolume" class="section">
-      <div class="row g-3 mb-2">
-        <div class="col-md-4"><div class="card card-kpi"><div class="kpi-label">Entregue</div><div id="kpiVolumeTotal" class="kpi-value">--</div></div></div>
-      </div>
-      <div id="volumeByFazenda" class="mt-2"></div>
-    </div>
-
-    <div class="footer">© 2025 Souza Transportes</div>
   </div>
 
-  <div id="loading" class="loading-overlay" style="display:none">Carregando... 🔄</div>
+  <div id="resumoContainer" class="card card-kpi mb-2"><div id="resumoTexto">Carregando dados...</div></div>
+  <div id="map"></div>
+  <div id="frotaContainer" class="row g-3 mt-2"></div>
+</div>
 
-  <script>
-  (function(){
-    const scriptURL = "https://script.google.com/macros/s/AKfycbxPxYiT6Hi_36xM1BnRY0Ww-kjFm6LUiShPb5PAE3WqSG8PYLAhdb-holArbkr1smcF/exec";
-    const geocodeCacheKey = 'souza_geocode_cache_v4';
-    const fmtBRL_noCents = v => new Intl.NumberFormat('pt-BR',{style:'currency',currency:'BRL',maximumFractionDigits:0}).format(Math.round(v));
-    const fmtNum1 = v => (typeof v === 'number' ? v.toLocaleString('pt-BR',{maximumFractionDigits:1}) : v);
+<!-- PRODUTIVIDADE -->
+<div id="sectionProd" class="section">
+  <div class="row g-3 mb-2">
+    <div class="col-md-3"><div class="card card-kpi"><div class="kpi-label">Faturamento Total</div><div id="kpiFaturamento" class="kpi-value">--</div></div></div>
+    <div class="col-md-3"><div class="card card-kpi"><div class="kpi-label">Comissão Total</div><div id="kpiComissao" class="kpi-value">--</div></div></div>
+    <div class="col-md-3"><div class="card card-kpi"><div class="kpi-label">Peso Total (ton)</div><div id="kpiPesoTotal" class="kpi-value">--</div></div></div>
+    <div class="col-md-3"><div class="card card-kpi"><div class="kpi-label">Viagens</div><div id="kpiViagens" class="kpi-value">--</div></div></div>
+  </div>
+  <div class="chart-card mb-2"><canvas id="chartProd"></canvas></div>
+</div>
 
-    let map=null, markers=[], dadosFrota=[], charts=[];
+<!-- VOLUME -->
+<div id="sectionVolume" class="section">
+  <div class="chart-card mb-2"><canvas id="chartVolume"></canvas></div>
+</div>
 
-    function toNumber(v){
-      if(v===null||v===undefined) return 0;
-      if(typeof v==='number') return v;
-      const s = String(v).replace(/\./g,'').replace(/,/g,'.').replace(/[^\d\.\-]/g,'');
-      const n = parseFloat(s);
-      return isNaN(n)?0:n;
+<div class="footer">© 2025 Souza Transportes</div>
+<div class="loading-overlay" id="loadingOverlay">Carregando...</div>
+
+<script>
+const scriptURL = "https://script.google.com/macros/s/AKfycbxPxYiT6Hi_36xM1BnRY0Ww-kjFm6LUiShPb5PAE3WqSG8PYLAhdb-holArbkr1smcF/exec";
+let map, markers = [], truckMarkers = [], caminhões = [], marcadores = [];
+
+document.addEventListener("DOMContentLoaded", async () => {
+  initMap();
+  await loadData();
+  initButtons();
+});
+
+function initButtons(){
+  document.getElementById("btnStatus").onclick = ()=>showSection("sectionStatus");
+  document.getElementById("btnProd").onclick = ()=>showSection("sectionProd");
+  document.getElementById("btnVolume").onclick = ()=>showSection("sectionVolume");
+  document.getElementById("refreshBtnTop").onclick = async ()=>{ await loadData(); };
+  document.getElementById("darkModeTop").onclick = ()=>document.body.classList.toggle("dark-mode");
+}
+
+function showSection(id){
+  document.querySelectorAll(".section").forEach(s=>s.classList.remove("active"));
+  document.getElementById(id).classList.add("active");
+}
+
+async function fetchJsonSafe(url){
+  try{
+    const res = await fetch(url);
+    return await res.json();
+  }catch(err){ console.error("Erro fetch:",err); return []; }
+}
+
+async function loadData(){
+  document.getElementById("loadingOverlay").style.display="flex";
+  const data = await fetchJsonSafe(scriptURL+'?t='+Date.now());
+  caminhões = data.caminhões || [];
+  marcadores = data.marcadores || [];
+
+  updateResumo();
+  updateFilters();
+  renderFrota();
+  renderMap();
+  renderCharts();
+  document.getElementById("loadingOverlay").style.display="none";
+}
+
+function initMap(){
+  map = L.map('map').setView([-3.0, -52.0], 5);
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{
+    maxZoom:19,
+    attribution:'&copy; OpenStreetMap contributors'
+  }).addTo(map);
+
+  // botão fullscreen custom
+  L.Control.Fullscreen = L.Control.extend({
+    onAdd: function(){ const btn=L.DomUtil.create('div','leaflet-control custom-fullscreen'); btn.innerHTML='<a href="#">⛶</a>'; return btn; },
+    onRemove: function(){}
+  });
+  map.addControl(new L.Control.Fullscreen({ position:'topleft' }));
+}
+
+function renderMap(){
+  // limpa marcadores antigos
+  markers.forEach(m=>map.removeLayer(m)); markers=[];
+  truckMarkers.forEach(m=>map.removeLayer(m)); truckMarkers=[];
+
+  // adiciona marcadores fixos
+  marcadores.forEach(m=>{
+    if(m.Latitude && m.Longitude){
+      const mk = L.marker([parseFloat(m.Latitude), parseFloat(m.Longitude)])
+        .addTo(map)
+        .bindPopup(`<b>${m.Nome}</b><br>${m.Descricao||''}`);
+      markers.push(mk);
     }
+  });
 
-    function clearCharts(){ charts.forEach(c=>{ try{ c.destroy(); }catch(e){} }); charts=[]; }
-    function clearMapMarkers(){ markers.forEach(m=>{ try{ map.removeLayer(m); }catch(e){} }); markers=[]; }
-
-    function loadGeocodeCache(){ try{ const raw = localStorage.getItem(geocodeCacheKey); return raw ? JSON.parse(raw) : {}; }catch(e){ return {}; } }
-    function saveGeocodeCache(c){ try{ localStorage.setItem(geocodeCacheKey, JSON.stringify(c)); }catch(e){} }
-
-    async function fetchJsonSafe(url, opts={}, timeout=12000){
-      const controller = new AbortController();
-      const id = setTimeout(()=>controller.abort(), timeout);
-      try{
-        const resp = await fetch(url, Object.assign({}, opts, { signal: controller.signal }));
-        clearTimeout(id);
-        if(!resp.ok) throw new Error('HTTP '+resp.status+' - '+resp.statusText);
-        const txt = await resp.text();
-        try{ return JSON.parse(txt); }catch(e){ throw new Error('Resposta não é JSON: '+txt.slice(0,200)); }
-      }catch(err){
-        clearTimeout(id);
-        throw err;
-      }
+  // adiciona caminhões
+  caminhões.forEach(c=>{
+    if(c.Latitude && c.Longitude){
+      const mk = L.marker([parseFloat(c.Latitude), parseFloat(c.Longitude)],{
+        icon:L.divIcon({className:'truck-label', html:`<span class="truck-emoji">🚛</span>${c.Motorista||'--'}`})
+      }).addTo(map);
+      truckMarkers.push(mk);
     }
+  });
+}
 
-    function initMap(){
-      if(map) return;
-      map = L.map('map', { preferCanvas:true }).setView([-4.5,-48.5],3);
+function updateResumo(){
+  const container = document.getElementById("resumoTexto");
+  container.innerHTML = `Caminhões: ${caminhões.length} | Marcadores: ${marcadores.length}`;
+}
 
-      const esriSat = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', { attribution:'Tiles © Esri' });
-      const osmLabels = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution:'&copy; OpenStreetMap contributors' });
-      const hybrid = L.layerGroup([esriSat, osmLabels]).addTo(map);
-      const street = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png');
+function updateFilters(){
+  const statusSet = new Set(caminhões.map(c=>c.Status)), produtoSet=new Set(caminhões.map(c=>c.Produto)), destinoSet=new Set(caminhões.map(c=>c.Destino));
+  const filtroStatus=document.getElementById("filtroStatus"), filtroProduto=document.getElementById("filtroProduto"), filtroDestino=document.getElementById("filtroDestino");
+  filtroStatus.innerHTML='<option value="">Todos os Status</option>'; filtroProduto.innerHTML='<option value="">Todos os Produtos</option>'; filtroDestino.innerHTML='<option value="">Todos os Destinos</option>';
+  statusSet.forEach(v=>filtroStatus.innerHTML+=`<option value="${v}">${v}</option>`);
+  produtoSet.forEach(v=>filtroProduto.innerHTML+=`<option value="${v}">${v}</option>`);
+  destinoSet.forEach(v=>filtroDestino.innerHTML+=`<option value="${v}">${v}</option>`);
+  filtroStatus.onchange = renderFrota; filtroProduto.onchange=renderFrota; filtroDestino.onchange=renderFrota;
+}
 
-      L.control.layers({ "🛰 Satélite (com rótulos)": hybrid, "🌐 Rua": street }).addTo(map);
-      L.control.scale().addTo(map);
+function renderFrota(){
+  const container=document.getElementById("frotaContainer"); container.innerHTML='';
+  const statusFilter=document.getElementById("filtroStatus").value;
+  const produtoFilter=document.getElementById("filtroProduto").value;
+  const destinoFilter=document.getElementById("filtroDestino").value;
+  caminhões.filter(c=>{
+    return (!statusFilter||c.Status===statusFilter) &&
+           (!produtoFilter||c.Produto===produtoFilter) &&
+           (!destinoFilter||c.Destino===destinoFilter);
+  }).forEach(c=>{
+    const card=document.createElement("div"); card.className='col-md-3';
+    card.innerHTML=`<div class="card card-kpi"><div class="kpi-label">${c.Motorista||'--'}</div><div class="kpi-value">${c.Status||'--'}</div></div>`;
+    container.appendChild(card);
+  });
+}
 
-      // Fullscreen custom
-      const fullscreenCtrl = L.control({position:'topright'});
-      fullscreenCtrl.onAdd = function(){
-        const div = L.DomUtil.create('div','leaflet-control custom-fullscreen');
-        div.innerHTML = '<a href="#" title="Tela cheia">⛶</a>';
-        div.onclick = ()=>{ map.getContainer().requestFullscreen(); return false; };
-        return div;
-      };
-      fullscreenCtrl.addTo(map);
-    }
+function renderCharts(){
+  // gráficos simples de exemplo
+  const prodCtx=document.getElementById("chartProd").getContext('2d');
+  const prodLabels=caminhões.map(c=>c.Motorista||'--'), prodData=caminhões.map(c=>parseFloat(c.Faturamento)||0);
+  if(window.prodChart) window.prodChart.destroy();
+  window.prodChart=new Chart(prodCtx,{type:'bar',data:{labels:prodLabels,datasets:[{label:'Faturamento',data:prodData,backgroundColor:'rgba(46,125,50,0.7)'}]},options:{plugins:{datalabels:{anchor:'end',align:'top'}}}});
 
-    async function renderFrota(){
-      if(!map) initMap();
-      clearMapMarkers();
-      const cache = loadGeocodeCache();
-
-      const frotaDiv = document.getElementById('frotaContainer');
-      frotaDiv.innerHTML = '';
-
-      // Filtragem
-      const statusFiltro = document.getElementById('filtroStatus').value;
-      const produtoFiltro = document.getElementById('filtroProduto').value;
-      const destinoFiltro = document.getElementById('filtroDestino').value;
-
-      const frotaFiltrada = dadosFrota.filter(f=>{
-        return (!statusFiltro || f.Status===statusFiltro) &&
-               (!produtoFiltro || f.Produto===produtoFiltro) &&
-               (!destinoFiltro || f.Destino===destinoFiltro);
-      });
-
-      frotaFiltrada.forEach(async f=>{
-        const div = document.createElement('div'); div.className='card card-kpi col-md-3';
-        div.innerHTML=`<div class="kpi-label">${f.Motorista} — ${f.Produto}</div>
-                       <div class="kpi-value">${fmtNum1(f.Peso || 0)} t</div>
-                       <div class="truck-label"><span class="truck-emoji">🚛</span>${f.Veiculo}</div>`;
-        frotaDiv.appendChild(div);
-
-        let lat = f.Latitude, lng = f.Longitude;
-
-        if(!lat || !lng){
-          if(f.Cidade){
-            const key = f.Cidade;
-            if(cache[key]){ lat=cache[key].lat; lng=cache[key].lng; }
-            else{
-              try{
-                const resp = await fetchJsonSafe(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(f.Cidade)}`);
-                if(resp && resp.length>0){ lat=parseFloat(resp[0].lat); lng=parseFloat(resp[0].lon); cache[key]={lat,lng}; saveGeocodeCache(cache); }
-              }catch(e){ console.warn('Geocode falhou para', f.Cidade, e); }
-            }
-          }
-        }
-
-        if(lat && lng){
-          const m = L.marker([lat,lng]).addTo(map);
-          m.bindPopup(`<b>${f.Motorista}</b><br>${f.Produto}<br>${f.Veiculo}`);
-          markers.push(m);
-        }
-      });
-
-      // Marcadores fixos
-      try{
-        const marcadores = await fetchJsonSafe(scriptURL+'?aba=marcadores');
-        marcadores.forEach(m=>{
-          if(m.Latitude && m.Longitude){
-            const mk = L.marker([parseFloat(m.Latitude), parseFloat(m.Longitude)], {icon:L.icon({iconUrl:'marker-icon.png',iconSize:[25,41],iconAnchor:[12,41]})}).addTo(map);
-            mk.bindPopup(`<b>${m.Nome}</b><br>${m.Descricao||''}`);
-            markers.push(mk);
-          }
-        });
-      }catch(e){ console.warn('Falha ao carregar marcadores', e); }
-
-      if(frotaFiltrada.length>0) map.fitBounds(L.featureGroup(markers).getBounds(), {padding:[50,50]});
-    }
-
-    async function loadFrota(){
-      document.getElementById('loading').style.display='flex';
-      try{
-        const dados = await fetchJsonSafe(scriptURL+'?aba=status');
-        dadosFrota = dados;
-        // popular filtros
-        const statusSet = new Set(dados.map(d=>d.Status)); const produtoSet = new Set(dados.map(d=>d.Produto)); const destinoSet = new Set(dados.map(d=>d.Destino));
-        const fStatus=document.getElementById('filtroStatus'), fProduto=document.getElementById('filtroProduto'), fDestino=document.getElementById('filtroDestino');
-        [fStatus,fProduto,fDestino].forEach(sel=>{ while(sel.options.length>1) sel.remove(1); });
-        statusSet.forEach(s=>{ const o=new Option(s,s); fStatus.add(o); });
-        produtoSet.forEach(s=>{ const o=new Option(s,s); fProduto.add(o); });
-        destinoSet.forEach(s=>{ const o=new Option(s,s); fDestino.add(o); });
-
-        renderFrota();
-      }catch(e){
-        console.error(e);
-        alert('Erro ao carregar frota: '+e.message);
-      }finally{ document.getElementById('loading').style.display='none'; }
-    }
-
-    // Seções
-    const sections = { btnStatus:'sectionStatus', btnProd:'sectionProd', btnVolume:'sectionVolume' };
-    Object.keys(sections).forEach(btnId=>{
-      document.getElementById(btnId).addEventListener('click',()=>{
-        Object.keys(sections).forEach(k=>{ document.getElementById(sections[k]).classList.remove('active'); document.getElementById(k).classList.remove('active'); });
-        document.getElementById(sections[btnId]).classList.add('active');
-        document.getElementById(btnId).classList.add('active');
-      });
-    });
-
-    document.getElementById('refreshBtnTop').addEventListener('click',()=>loadFrota());
-    document.getElementById('darkModeTop').addEventListener('click',()=>{
-      document.body.classList.toggle('dark-mode');
-    });
-
-    // Filtros
-    ['filtroStatus','filtroProduto','filtroDestino'].forEach(fid=>{
-      document.getElementById(fid).addEventListener('change',()=>renderFrota());
-    });
-
-    loadFrota();
-  })();
-  </script>
+  const volCtx=document.getElementById("chartVolume").getContext('2d');
+  const volLabels=caminhões.map(c=>c.Produto||'--'), volData=caminhões.map(c=>parseFloat(c.Quantidade)||0);
+  if(window.volChart) window.volChart.destroy();
+  window.volChart=new Chart(volCtx,{type:'bar',data:{labels:volLabels,datasets:[{label:'Volume',data:volData,backgroundColor:'rgba(0,123,255,0.7)'}]},options:{plugins:{datalabels:{anchor:'end',align:'top'}}}});
+}
+</script>
+</div>
 </body>
 </html>
