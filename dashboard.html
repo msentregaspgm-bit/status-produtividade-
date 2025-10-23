@@ -311,27 +311,62 @@
     }
 
     // ===================== FIXED MARKERS (exemplos) =====================
-    // Você pode editar/adicionar marcacoesFixas com suas coordenadas reais
-    const marcacoesFixas = [
-      { nome: "Faz. Santa Angelica", lat: -3.5862890625277597, lon: -47.345423192202894, description: "Faz Santa Angelica" },
-      { nome: "Depósito Região Norte", lat: -3.1190, lon: -60.0217, description: "Depósito Manaus (exemplo)" },
-      { nome: "Ponto de Apoio Maranhão", lat: -2.5297, lon: -44.3028, description: "Ponto de apoio em São Luís (exemplo)" }
-    ];
+    // Flag para visibilidade dos marcadores fixos
+let fixedMarkersVisible = true;
 
-    function loadFixedMarkersOnMap(){
-      clearFixedMarkers();
-      for(const p of marcacoesFixas){
-        createFixedMarker(p.lat, p.lon, p.nome, { description: p.description });
-      }
-      fixedLayerGroup[ fixedMarkersVisible ? 'addTo' : 'removeFrom' ]?.(map);
+// LayerGroup para os marcadores fixos
+const fixedLayerGroup = L.layerGroup().addTo(map);
+
+// Marcadores fixos com ícones diferentes
+const marcacoesFixas = [
+  { nome: "Sede", lat: -3.5862890625277597, lon: -47.345423192202894, description: "Faz Santa Angelica", iconUrl: 'icones/sede.png' },
+  { nome: "Fertillizante", lat: -2.6800023947870817, lon: -44.28110489962948, description: "Mosaic", iconUrl: 'icones/fertilizante.png' },
+  { nome: "Ponto de Apoio Maranhão", lat: -2.5297, lon: -44.3028, description: "Ponto de apoio em São Luís (exemplo)", iconUrl: 'icones/apoio.png' }
+];
+
+// Limpa marcadores fixos
+function clearFixedMarkers() {
+    fixedLayerGroup.clearLayers();
+}
+
+// Cria marcador fixo com ícone personalizado
+function createFixedMarker(lat, lon, nome, options = {}) {
+    // Cria ícone específico do marcador
+    const markerIcon = L.icon({
+        iconUrl: options.iconUrl || 'icones/default.png', // ícone padrão caso não seja definido
+        iconSize: [32, 32],
+        iconAnchor: [16, 32],
+        popupAnchor: [0, -32]
+    });
+
+    const marker = L.marker([lat, lon], { icon: markerIcon });
+
+    if(options.description){
+        marker.bindPopup(`<b>${nome}</b><br>${options.description}`);
     }
 
-    // toggle fixed markers
-    function toggleFixedMarkers(){
-      fixedMarkersVisible = !fixedMarkersVisible;
-      if(fixedMarkersVisible) fixedLayerGroup.addTo(map);
-      else map.removeLayer(fixedLayerGroup);
+    fixedLayerGroup.addLayer(marker);
+}
+
+// Carrega todos os marcadores fixos no mapa
+function loadFixedMarkersOnMap() {
+    clearFixedMarkers();
+    for(const p of marcacoesFixas){
+        createFixedMarker(p.lat, p.lon, p.nome, { description: p.description, iconUrl: p.iconUrl });
     }
+    fixedLayerGroup[ fixedMarkersVisible ? 'addTo' : 'removeFrom' ]?.(map);
+}
+
+// Alterna a visibilidade dos marcadores fixos
+function toggleFixedMarkers() {
+    fixedMarkersVisible = !fixedMarkersVisible;
+    if(fixedMarkersVisible) fixedLayerGroup.addTo(map);
+    else map.removeLayer(fixedLayerGroup);
+}
+
+// Inicializa os marcadores no carregamento do mapa
+loadFixedMarkersOnMap();
+
 
     // ===================== BUSCAR DADOS / STATUS =====================
     async function buscarDados(showLoading = true){
