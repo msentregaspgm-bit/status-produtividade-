@@ -1,239 +1,735 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-<meta charset="utf-8" />
-<meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>Souza Transportes</title>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Souza Transportes — Dashboard</title>
 
-<!-- PWA manifest -->
-<link rel="manifest" href="manifest.json">
-<meta name="theme-color" content="#2e7d32">
+  <!-- PWA manifest -->
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#2e7d32">
 
-<!-- Bootstrap, Leaflet, Chart.js -->
-<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" defer></script>
-<script src="https://cdn.jsdelivr.net/npm/chart.js" defer></script>
-<script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2" defer></script>
+  <!-- Bootstrap, Leaflet, Chart.js, DataLabels -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" defer></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js" defer></script>
+  <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2" defer></script>
 
-<style>
-  /* mantém o estilo original do seu dashboard */
-  :root{ --verde-souza:#2e7d32; --bg:#ffffff; --card-bg:#ffffff; --muted:#6c757d; }
-  body{ background:var(--bg); color:#222; font-family:Inter, "Segoe UI", Roboto, Arial, sans-serif; padding:12px; transition:background .25s,color .25s; }
-  body.dark-mode{ background:#111; color:#eee; }
-  header{ display:flex; align-items:center; justify-content:space-between; gap:8px; flex-wrap:wrap; margin-bottom:8px; }
-  .logo-left{ width:56px; height:auto; border-radius:6px; }
-  .title-wrap{ text-align:center; flex:1; min-width:180px; }
-  h1{ margin:0; color:var(--verde-souza); font-weight:700; font-size:20px; }
-  .app-legend{ text-align:center; font-size:0.95rem; color:var(--muted); margin-top:4px; }
-  .btn-icon{ border-radius:50%; width:40px; height:40px; display:flex; align-items:center; justify-content:center; }
-  .topbar{ display:flex; gap:8px; justify-content:center; align-items:center; flex-wrap:wrap; margin:12px 0; }
-  .nav-btn{ width:44px; height:44px; padding:0; border-radius:8px; display:flex; align-items:center; justify-content:center; }
-  .nav-btn.active{ box-shadow: inset 0 3px 6px rgba(0,0,0,0.12); }
-  .card-kpi{ border-radius:10px; background:var(--card-bg); box-shadow:0 3px 10px rgba(0,0,0,0.06); padding:12px; }
-  .kpi-label{ font-size:0.85rem; color:var(--muted); }
-  .kpi-value{ font-weight:700; color:var(--verde-souza); font-size:1.3rem; }
-  #map{ height:520px; border-radius:12px; margin-bottom:12px; position:relative; }
-  .chart-card{ padding:12px; border-radius:10px; background:var(--card-bg); box-shadow:0 3px 10px rgba(0,0,0,0.06); }
-  canvas{ max-height:300px !important; height:300px !important; width:100% !important; }
-  .section{ display:none; }
-  .section.active{ display:block; }
-  .footer{ text-align:center; color:var(--muted); margin-top:14px; font-size:0.85rem; }
-  @media(max-width:768px){ #map{ height:420px; } h1{ font-size:18px; } canvas{ max-height:260px !important; height:260px !important; } }
-  .truck-label { display:inline-flex; align-items:center; gap:6px; padding:4px 8px; border-radius:8px; font-size:12px; font-weight:600; background:rgba(255,255,255,0.92); box-shadow:0 1px 3px rgba(0,0,0,0.18); white-space:nowrap; }
-  .truck-label .truck-emoji { margin-right:4px; }
-  .leaflet-control.custom-fullscreen a { background:#fff; padding:6px; border-radius:6px; display:inline-block; box-shadow:0 1px 3px rgba(0,0,0,0.2); }
-  .loading-overlay { position:fixed; left:0; right:0; top:0; bottom:0; display:flex; align-items:center; justify-content:center; background:rgba(255,255,255,0.6); z-index:1200; font-size:1.1rem; color:#333; }
-  body.dark-mode .loading-overlay { background:rgba(0,0,0,0.6); color:#eee; }
-</style>
+  <style>
+    :root{ --verde-souza:#2e7d32; --bg:#ffffff; --card-bg:#ffffff; --muted:#6c757d; }
+    body{ background:var(--bg); color:#222; font-family:Inter, "Segoe UI", Roboto, Arial, sans-serif; padding:12px; transition:background .25s,color .25s; }
+    body.dark-mode{ background:#0e0e10; color:#eee; }
+    header{ display:flex; align-items:center; justify-content:space-between; gap:8px; flex-wrap:wrap; margin-bottom:8px; }
+    .logo-left{ width:56px; height:auto; border-radius:6px; }
+    .title-wrap{ text-align:center; flex:1; min-width:180px; }
+    h1{ margin:0; color:var(--verde-souza); font-weight:700; font-size:20px; }
+    .app-legend{ text-align:center; font-size:0.95rem; color:var(--muted); margin-top:4px; }
+    .btn-icon{ border-radius:50%; width:40px; height:40px; display:flex; align-items:center; justify-content:center; }
+    .topbar{ display:flex; gap:8px; justify-content:center; align-items:center; flex-wrap:wrap; margin:12px 0; }
+    .nav-btn{ width:44px; height:44px; padding:0; border-radius:8px; display:flex; align-items:center; justify-content:center; }
+    .nav-btn.active{ box-shadow: inset 0 3px 6px rgba(0,0,0,0.12); }
+    .card-kpi{ border-radius:10px; background:var(--card-bg); box-shadow:0 3px 10px rgba(0,0,0,0.06); padding:12px; }
+    .kpi-label{ font-size:0.85rem; color:var(--muted); }
+    .kpi-value{ font-weight:700; color:var(--verde-souza); font-size:1.3rem; }
+    #map{ height:520px; border-radius:12px; margin-bottom:12px; position:relative; }
+    .chart-card{ padding:12px; border-radius:10px; background:var(--card-bg); box-shadow:0 3px 10px rgba(0,0,0,0.06); }
+    canvas{ max-height:300px !important; height:300px !important; width:100% !important; }
+    .section{ display:none; }
+    .section.active{ display:block; }
+    .footer{ text-align:center; color:var(--muted); margin-top:14px; font-size:0.85rem; }
+    @media(max-width:768px){ #map{ height:420px; } h1{ font-size:18px; } canvas{ max-height:260px !important; height:260px !important; } }
+
+    .truck-label { display:inline-flex; align-items:center; gap:6px; padding:4px 8px; border-radius:8px; font-size:12px; font-weight:600; background:rgba(255,255,255,0.92); box-shadow:0 1px 3px rgba(0,0,0,0.18); white-space:nowrap; }
+    .truck-label .truck-emoji { margin-right:4px; }
+    .leaflet-control.custom-fullscreen a { background:#fff; padding:6px; border-radius:6px; display:inline-block; box-shadow:0 1px 3px rgba(0,0,0,0.2); }
+    .loading-overlay { position:fixed; left:0; right:0; top:0; bottom:0; display:flex; align-items:center; justify-content:center; background:rgba(255,255,255,0.6); z-index:1200; font-size:1.1rem; color:#333; }
+    body.dark-mode .loading-overlay { background:rgba(0,0,0,0.6); color:#eee; }
+  </style>
 </head>
 <body>
-<div class="container">
-<header>
-  <img src="logo.png" alt="Logo Souza" class="logo-left">
-  <div class="title-wrap">
-    <h1>Souza Transportes</h1>
-    <div id="appLegend" class="app-legend">🚛 Status da Frota — Região: Pará & Maranhão</div>
-  </div>
-  <div style="text-align:right">
-    <button id="refreshBtnTop" class="btn btn-success btn-icon" title="Atualizar">🔄</button>
-    <button id="darkModeTop" class="btn btn-outline-dark btn-icon" title="Modo Escuro">🌙</button>
-  </div>
-</header>
+  <div class="container">
+    <header>
+      <img src="logo.png" alt="Logo Souza" class="logo-left">
+      <div class="title-wrap">
+        <h1>Souza Transportes</h1>
+        <div id="appLegend" class="app-legend">🚛 Status da Frota — Região: Pará & Maranhão</div>
+      </div>
+      <div style="text-align:right">
+        <button id="refreshBtnTop" class="btn btn-success btn-icon" title="Atualizar">🔄</button>
+        <button id="darkModeTop" class="btn btn-outline-dark btn-icon" title="Modo Escuro">🌙</button>
+      </div>
+    </header>
 
-<div class="topbar">
-  <button id="btnStatus" class="btn btn-outline-success nav-btn active" title="Status Frota">🚛</button>
-  <button id="btnProd" class="btn btn-outline-warning nav-btn" title="Produtividade">📈</button>
-  <button id="btnVolume" class="btn btn-outline-primary nav-btn" title="Volume Entregue">📊</button>
-  <button id="btnPneus" class="btn btn-outline-dark nav-btn" title="Pneus" onclick="window.open('https://pneus-souza.vercel.app/', '_blank')">
-    <img src="logoPneu.png" alt="Pneu" width="24" height="24">
-  </button>
-</div>
-
-<!-- STATUS -->
-<div id="sectionStatus" class="section active">
-  <div class="mb-2">
-    <div style="font-weight:600; margin-bottom:6px;">Filtrar por Status, Produto e Destino:</div>
-    <div class="d-flex gap-2 flex-wrap">
-      <select id="filtroStatus" class="form-select form-select-sm" style="width:220px"><option value="">Todos os Status</option></select>
-      <select id="filtroProduto" class="form-select form-select-sm" style="width:220px"><option value="">Todos os Produtos</option></select>
-      <select id="filtroDestino" class="form-select form-select-sm" style="width:220px"><option value="">Todos os Destinos</option></select>
+    <div class="topbar">
+      <button id="btnStatus" class="btn btn-outline-success nav-btn active" title="Status Frota">🚛</button>
+      <button id="btnProd" class="btn btn-outline-warning nav-btn" title="Produtividade">📈</button>
+      <button id="btnVolume" class="btn btn-outline-primary nav-btn" title="Volume Entregue">📊</button>
+      <button id="btnPneus" class="btn btn-outline-dark nav-btn" title="Pneus" onclick="window.open('https://pneus-souza.vercel.app/', '_blank')">
+        <img src="logoPneu.png" alt="Pneu" width="24" height="24">
+      </button>
+      <button id="toggleFixedMarkers" class="btn btn-outline-info nav-btn" title="Mostrar/Ocultar pontos fixos">📌</button>
     </div>
+
+    <!-- STATUS -->
+    <div id="sectionStatus" class="section active">
+      <div class="mb-2">
+        <div style="font-weight:600; margin-bottom:6px;">Filtrar por Status, Produto e Destino:</div>
+        <div class="d-flex gap-2 flex-wrap">
+          <select id="filtroStatus" class="form-select form-select-sm" style="width:220px"><option value="">Todos os Status</option></select>
+          <select id="filtroProduto" class="form-select form-select-sm" style="width:220px"><option value="">Todos os Produtos</option></select>
+          <select id="filtroDestino" class="form-select form-select-sm" style="width:220px"><option value="">Todos os Destinos</option></select>
+        </div>
+      </div>
+
+      <div id="resumoContainer" class="card card-kpi mb-2"><div id="resumoTexto">Carregando dados...</div></div>
+
+      <div id="map"></div>
+
+      <div id="frotaContainer" class="row g-3 mt-2"></div>
+    </div>
+
+    <!-- PRODUTIVIDADE -->
+    <div id="sectionProd" class="section">
+      <div class="row g-3 mb-2">
+        <div class="col-md-3"><div class="card card-kpi"><div class="kpi-label">Faturamento Total</div><div id="kpiFaturamento" class="kpi-value">--</div></div></div>
+        <div class="col-md-3"><div class="card card-kpi"><div class="kpi-label">Comissão Total</div><div id="kpiComissao" class="kpi-value">--</div></div></div>
+        <div class="col-md-3"><div class="card card-kpi"><div class="kpi-label">Peso Total (ton)</div><div id="kpiPesoTotal" class="kpi-value">--</div></div></div>
+        <div class="col-md-3"><div class="card card-kpi"><div class="kpi-label">Viagens</div><div id="kpiViagensTotal" class="kpi-value">--</div></div></div>
+      </div>
+
+      <div class="row g-3">
+        <div class="col-md-6"><div class="chart-card"><h6>Peso por Motorista</h6><canvas id="chartPesoMotorista"></canvas></div></div>
+        <div class="col-md-6"><div class="chart-card"><h6>Comissão por Motorista</h6><canvas id="chartComissaoMotorista"></canvas></div></div>
+      </div>
+    </div>
+
+    <!-- VOLUME -->
+    <div id="sectionVolume" class="section">
+      <div class="row g-3 mb-2">
+        <div class="col-md-4"><div class="card card-kpi"><div class="kpi-label">Entregue</div><div id="kpiVolumeTotal" class="kpi-value">--</div></div></div>
+      </div>
+
+      <div id="volumeByFazenda" class="mt-2"></div>
+    </div>
+
+    <div class="footer">© 2025 Souza Transportes</div>
   </div>
 
-  <div id="resumoContainer" class="card card-kpi mb-2"><div id="resumoTexto">Carregando dados...</div></div>
-  <div id="map"></div>
-  <div id="frotaContainer" class="row g-3 mt-2"></div>
-</div>
+  <div id="loading" class="loading-overlay" style="display:none">Carregando... 🔄</div>
 
-<!-- PRODUTIVIDADE -->
-<div id="sectionProd" class="section">
-  <div class="row g-3 mb-2">
-    <div class="col-md-3"><div class="card card-kpi"><div class="kpi-label">Faturamento Total</div><div id="kpiFaturamento" class="kpi-value">--</div></div></div>
-    <div class="col-md-3"><div class="card card-kpi"><div class="kpi-label">Comissão Total</div><div id="kpiComissao" class="kpi-value">--</div></div></div>
-    <div class="col-md-3"><div class="card card-kpi"><div class="kpi-label">Peso Total (ton)</div><div id="kpiPesoTotal" class="kpi-value">--</div></div></div>
-    <div class="col-md-3"><div class="card card-kpi"><div class="kpi-label">Viagens</div><div id="kpiViagens" class="kpi-value">--</div></div></div>
-  </div>
-  <div class="chart-card mb-2"><canvas id="chartProd"></canvas></div>
-</div>
+  <script>
+  (function(){
+    // ===================== CONFIG =====================
+    const scriptURL = "https://script.google.com/macros/s/AKfycbyZDvHD4CCG4xAbuIjckNApANUkDow8uifF96C1R5DRKd4soQJVZKvNoWJ6hLDPyc5n/exec";
+    const geocodeCacheKey = 'souza_geocode_cache_v4';
+    const fixedMarkersStorageKey = 'souza_fixed_markers_v1';
+    const fmtBRL_noCents = v => new Intl.NumberFormat('pt-BR',{style:'currency',currency:'BRL',maximumFractionDigits:0}).format(Math.round(v));
+    const fmtNum1 = v => (typeof v === 'number' ? v.toLocaleString('pt-BR',{maximumFractionDigits:1}) : v);
 
-<!-- VOLUME -->
-<div id="sectionVolume" class="section">
-  <div class="chart-card mb-2"><canvas id="chartVolume"></canvas></div>
-</div>
+    // ===================== STATE =====================
+    let map = null;
+    let truckMarkers = [];
+    let fixedMarkers = [];
+    let markersLayerGroup = null;
+    let fixedLayerGroup = null;
+    let dadosFrota = [];
+    let charts = [];
+    let fixedMarkersVisible = true;
 
-<div class="footer">© 2025 Souza Transportes</div>
-<div class="loading-overlay" id="loadingOverlay">Carregando...</div>
-
-<script>
-const scriptURL = "https://script.google.com/macros/s/AKfycbxPxYiT6Hi_36xM1BnRY0Ww-kjFm6LUiShPb5PAE3WqSG8PYLAhdb-holArbkr1smcF/exec";
-let map, markers = [], truckMarkers = [], caminhões = [], marcadores = [];
-
-document.addEventListener("DOMContentLoaded", async () => {
-  initMap();
-  await loadData();
-  initButtons();
-});
-
-function initButtons(){
-  document.getElementById("btnStatus").onclick = ()=>showSection("sectionStatus");
-  document.getElementById("btnProd").onclick = ()=>showSection("sectionProd");
-  document.getElementById("btnVolume").onclick = ()=>showSection("sectionVolume");
-  document.getElementById("refreshBtnTop").onclick = async ()=>{ await loadData(); };
-  document.getElementById("darkModeTop").onclick = ()=>document.body.classList.toggle("dark-mode");
-}
-
-function showSection(id){
-  document.querySelectorAll(".section").forEach(s=>s.classList.remove("active"));
-  document.getElementById(id).classList.add("active");
-}
-
-async function fetchJsonSafe(url){
-  try{
-    const res = await fetch(url);
-    return await res.json();
-  }catch(err){ console.error("Erro fetch:",err); return []; }
-}
-
-async function loadData(){
-  document.getElementById("loadingOverlay").style.display="flex";
-  const data = await fetchJsonSafe(scriptURL+'?t='+Date.now());
-  caminhões = data.caminhões || [];
-  marcadores = data.marcadores || [];
-
-  updateResumo();
-  updateFilters();
-  renderFrota();
-  renderMap();
-  renderCharts();
-  document.getElementById("loadingOverlay").style.display="none";
-}
-
-function initMap(){
-  map = L.map('map').setView([-3.0, -52.0], 5);
-  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{
-    maxZoom:19,
-    attribution:'&copy; OpenStreetMap contributors'
-  }).addTo(map);
-
-  // botão fullscreen custom
-  L.Control.Fullscreen = L.Control.extend({
-    onAdd: function(){ const btn=L.DomUtil.create('div','leaflet-control custom-fullscreen'); btn.innerHTML='<a href="#">⛶</a>'; return btn; },
-    onRemove: function(){}
-  });
-  map.addControl(new L.Control.Fullscreen({ position:'topleft' }));
-}
-
-function renderMap(){
-  // limpa marcadores antigos
-  markers.forEach(m=>map.removeLayer(m)); markers=[];
-  truckMarkers.forEach(m=>map.removeLayer(m)); truckMarkers=[];
-
-  // adiciona marcadores fixos
-  marcadores.forEach(m=>{
-    if(m.Latitude && m.Longitude){
-      const mk = L.marker([parseFloat(m.Latitude), parseFloat(m.Longitude)])
-        .addTo(map)
-        .bindPopup(`<b>${m.Nome}</b><br>${m.Descricao||''}`);
-      markers.push(mk);
+    // ===================== HELPERS =====================
+    function toNumber(v){
+      if(v === null || v === undefined) return 0;
+      if(typeof v === 'number') return v;
+      const s = String(v).replace(/\./g,'').replace(/,/g,'.').replace(/[^\d\.\-]/g,'');
+      const n = parseFloat(s);
+      return isNaN(n) ? 0 : n;
     }
-  });
+    function clearCharts(){ charts.forEach(c=>{ try{ c.destroy(); }catch(e){} }); charts=[]; }
+    function clearTruckMarkers(){ if(markersLayerGroup) { markersLayerGroup.clearLayers(); } truckMarkers=[]; }
+    function clearFixedMarkers(){ if(fixedLayerGroup) { fixedLayerGroup.clearLayers(); } fixedMarkers=[]; }
 
-  // adiciona caminhões
-  caminhões.forEach(c=>{
-    if(c.Latitude && c.Longitude){
-      const mk = L.marker([parseFloat(c.Latitude), parseFloat(c.Longitude)],{
-        icon:L.divIcon({className:'truck-label', html:`<span class="truck-emoji">🚛</span>${c.Motorista||'--'}`})
-      }).addTo(map);
-      truckMarkers.push(mk);
+    function loadGeocodeCache(){ try{ const raw = localStorage.getItem(geocodeCacheKey); return raw ? JSON.parse(raw) : {}; }catch(e){ return {}; } }
+    function saveGeocodeCache(c){ try{ localStorage.setItem(geocodeCacheKey, JSON.stringify(c)); }catch(e){} }
+
+    // safe fetch + parse JSON with timeout
+    async function fetchJsonSafe(url, opts = {}, timeout = 12000){
+      const controller = new AbortController();
+      const id = setTimeout(()=>controller.abort(), timeout);
+      try{
+        const resp = await fetch(url, Object.assign({}, opts, { signal: controller.signal }));
+        clearTimeout(id);
+        if(!resp.ok) throw new Error('HTTP '+resp.status+' - '+resp.statusText);
+        const txt = await resp.text();
+        try{ return JSON.parse(txt); }catch(e){ throw new Error('Resposta não é JSON: ' + txt.slice(0,200)); }
+      }catch(err){
+        clearTimeout(id);
+        throw err;
+      }
     }
-  });
-}
 
-function updateResumo(){
-  const container = document.getElementById("resumoTexto");
-  container.innerHTML = `Caminhões: ${caminhões.length} | Marcadores: ${marcadores.length}`;
-}
+    // ===================== MAP INIT =====================
+    function initMap(){
+      if(map) return;
+      // center roughly between Pará e Maranhão with zoom 5
+      map = L.map('map', { preferCanvas: true }).setView([-4.5, -48.5], 5);
 
-function updateFilters(){
-  const statusSet = new Set(caminhões.map(c=>c.Status)), produtoSet=new Set(caminhões.map(c=>c.Produto)), destinoSet=new Set(caminhões.map(c=>c.Destino));
-  const filtroStatus=document.getElementById("filtroStatus"), filtroProduto=document.getElementById("filtroProduto"), filtroDestino=document.getElementById("filtroDestino");
-  filtroStatus.innerHTML='<option value="">Todos os Status</option>'; filtroProduto.innerHTML='<option value="">Todos os Produtos</option>'; filtroDestino.innerHTML='<option value="">Todos os Destinos</option>';
-  statusSet.forEach(v=>filtroStatus.innerHTML+=`<option value="${v}">${v}</option>`);
-  produtoSet.forEach(v=>filtroProduto.innerHTML+=`<option value="${v}">${v}</option>`);
-  destinoSet.forEach(v=>filtroDestino.innerHTML+=`<option value="${v}">${v}</option>`);
-  filtroStatus.onchange = renderFrota; filtroProduto.onchange=renderFrota; filtroDestino.onchange=renderFrota;
-}
+      // --- Camadas ---
+      // Google-like hybrid (satélite + labels). Atenção: uso de tiles públicos pode ter restrições de uso.
+      const googleHybrid = L.tileLayer('https://mt1.google.com/vt/lyrs=y&x={x}&y={y}&z={z}', { maxZoom: 20, attribution: '&copy; Google Maps' });
+      const esriSat = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', { attribution: 'Tiles © Esri' });
+      const osm = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '&copy; OpenStreetMap contributors' });
 
-function renderFrota(){
-  const container=document.getElementById("frotaContainer"); container.innerHTML='';
-  const statusFilter=document.getElementById("filtroStatus").value;
-  const produtoFilter=document.getElementById("filtroProduto").value;
-  const destinoFilter=document.getElementById("filtroDestino").value;
-  caminhões.filter(c=>{
-    return (!statusFilter||c.Status===statusFilter) &&
-           (!produtoFilter||c.Produto===produtoFilter) &&
-           (!destinoFilter||c.Destino===destinoFilter);
-  }).forEach(c=>{
-    const card=document.createElement("div"); card.className='col-md-3';
-    card.innerHTML=`<div class="card card-kpi"><div class="kpi-label">${c.Motorista||'--'}</div><div class="kpi-value">${c.Status||'--'}</div></div>`;
-    container.appendChild(card);
-  });
-}
+      // Add default
+      googleHybrid.addTo(map);
 
-function renderCharts(){
-  // gráficos simples de exemplo
-  const prodCtx=document.getElementById("chartProd").getContext('2d');
-  const prodLabels=caminhões.map(c=>c.Motorista||'--'), prodData=caminhões.map(c=>parseFloat(c.Faturamento)||0);
-  if(window.prodChart) window.prodChart.destroy();
-  window.prodChart=new Chart(prodCtx,{type:'bar',data:{labels:prodLabels,datasets:[{label:'Faturamento',data:prodData,backgroundColor:'rgba(46,125,50,0.7)'}]},options:{plugins:{datalabels:{anchor:'end',align:'top'}}}});
+      L.control.layers({ "🛰 Satélite (Google-like)": googleHybrid, "🛰 Satélite (Esri)": esriSat, "🗺 OpenStreetMap": osm }).addTo(map);
 
-  const volCtx=document.getElementById("chartVolume").getContext('2d');
-  const volLabels=caminhões.map(c=>c.Produto||'--'), volData=caminhões.map(c=>parseFloat(c.Quantidade)||0);
-  if(window.volChart) window.volChart.destroy();
-  window.volChart=new Chart(volCtx,{type:'bar',data:{labels:volLabels,datasets:[{label:'Volume',data:volData,backgroundColor:'rgba(0,123,255,0.7)'}]},options:{plugins:{datalabels:{anchor:'end',align:'top'}}}});
-}
-</script>
-</div>
+      // custom fullscreen control
+      const FullCtl = L.Control.extend({
+        onAdd: function(map){
+          const container = L.DomUtil.create('div','leaflet-control custom-fullscreen');
+          container.innerHTML = `<a title="Tela cheia" href="#" id="btnMapFull">⤢</a>`;
+          L.DomEvent.disableClickPropagation(container);
+          return container;
+        }
+      });
+      map.addControl(new FullCtl({ position: 'topleft' }));
+
+      document.addEventListener('click', function(e){
+        if(e.target && e.target.id === 'btnMapFull'){
+          e.preventDefault();
+          toggleFullscreen(document.getElementById('map'));
+        }
+      });
+
+      // layer groups for trucks and fixed markers (easier para limpar)
+      markersLayerGroup = L.layerGroup().addTo(map);
+      fixedLayerGroup = L.layerGroup().addTo(map);
+
+      // events
+      document.addEventListener('fullscreenchange', ()=> setTimeout(()=> map.invalidateSize(), 300));
+      window.addEventListener('resize', ()=> setTimeout(()=> map.invalidateSize(), 200));
+    }
+
+    function toggleFullscreen(elem){
+      if(!document.fullscreenElement){
+        elem.requestFullscreen?.().catch(()=>{ alert('Falha ao entrar em tela cheia'); });
+      } else {
+        document.exitFullscreen?.();
+      }
+    }
+
+    // ===================== GEOCODING =====================
+    async function geocodeCity(city){
+      if(!city || !String(city).trim()) return null;
+      const key = String(city).trim();
+      const cache = loadGeocodeCache();
+      if(cache[key]) return cache[key];
+      const q = `${key}, Brasil`;
+      const url = `https://nominatim.openstreetmap.org/search?format=json&limit=1&q=${encodeURIComponent(q)}`;
+      try{
+        // gentle throttle
+        await new Promise(r=>setTimeout(r, 150));
+        const resp = await fetch(url, { headers:{ 'Accept-Language':'pt-BR' } });
+        if(!resp.ok) return null;
+        const arr = await resp.json();
+        if(arr && arr[0]){
+          const lat = parseFloat(arr[0].lat), lon = parseFloat(arr[0].lon);
+          if(!isNaN(lat) && !isNaN(lon)){
+            cache[key] = { lat, lon, display_name: arr[0].display_name };
+            saveGeocodeCache(cache);
+            return cache[key];
+          }
+        }
+      }catch(e){ console.warn('geocodeCity error', e); }
+      return null;
+    }
+
+    // ===================== UTIL: extract coords from row =====================
+    function extractCoordsFromRow(row){
+      // try multiple possible field names
+      const latFields = ['Lat','LAT','Latitude','latitude','LATITUDE','lat'];
+      const lonFields = ['Lon','LON','Lon','Longitude','longitude','LONGITUDE','lng','Lng','LNG'];
+      let lat = null, lon = null;
+      for(const f of latFields){ if(row[f] !== undefined && row[f] !== null && String(row[f]).trim() !== ''){ lat = toNumber(row[f]); break; } }
+      for(const f of lonFields){ if(row[f] !== undefined && row[f] !== null && String(row[f]).trim() !== ''){ lon = toNumber(row[f]); break; } }
+      if(lat !== null && lon !== null && !isNaN(lat) && !isNaN(lon)) return { lat, lon };
+      return null;
+    }
+
+    function extractPlate(row){
+      const p = row.Placa || row.PLACA || row.placa || row.Frota || row.frota || row.Nome || row.NOME || '';
+      if(!p) return '';
+      const s = String(p).trim();
+      const token = s.split(/\s+/)[0];
+      return token;
+    }
+    function extractFirstName(row){
+      const m = row.MOTORISTA || row.Motorista || row.motorista || row['Motorista'] || '';
+      if(!m) return '';
+      const fn = String(m).trim().split(' ')[0];
+      return fn;
+    }
+
+    // ===================== CREATE MARKERS =====================
+    function createTruckMarker(lat, lon, frotaLabel, status, popupHtml){
+      if(!map || isNaN(lat) || isNaN(lon)) return null;
+      const s = (status||'').toLowerCase();
+      const borderColor = s.includes('carregado') ? '#2e7d32' : (s.includes('descarregando') ? '#ff9800' : '#d32f2f');
+      const textColor = borderColor;
+      const safeLabel = String(frotaLabel||'').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+      const html = `
+        <div class="truck-label" style="border:2px solid ${borderColor}; background: rgba(255,255,255,0.94);">
+          <span class="truck-emoji">🚛</span>
+          <span style="color:${textColor};">${safeLabel}</span>
+        </div>`;
+      const icon = L.divIcon({ html, className:'truck-div-icon', iconSize: [Math.min(320, (safeLabel.length*8)+80),34], iconAnchor: [16,16] });
+      const m = L.marker([lat,lon], { icon });
+      m.bindPopup(popupHtml);
+      markersLayerGroup.addLayer(m);
+      truckMarkers.push(m);
+      return m;
+    }
+
+    function createFixedMarker(lat, lon, name, opts = {}){
+      const mm = L.marker([lat, lon], { title: name, riseOnHover: true });
+      const popupHtml = `<strong>${name}</strong><br><small>${opts.description || ''}</small>`;
+      mm.bindPopup(popupHtml);
+      fixedLayerGroup.addLayer(mm);
+      fixedMarkers.push(mm);
+      return mm;
+    }
+
+    // jitter small amount for trucks that share the same base coordinates
+    function jitterLatLng(lat, lon, index){
+      const magnitude = 0.006; // smaller jitter ~ few hundred meters
+      const angle = (index * 137.5) % 360;
+      const rad = angle * Math.PI / 180;
+      const r = (index * 0.0006) + (Math.random() * magnitude * 0.35);
+      return [lat + Math.sin(rad)*r, lon + Math.cos(rad)*r];
+    }
+
+    // ===================== FIXED MARKERS (exemplos) =====================
+    // Você pode editar/adicionar marcacoesFixas com suas coordenadas reais
+    const marcacoesFixas = [
+      { nome: "Base Central - Belém", lat: -1.4558, lon: -48.4902, description: "Sede Souza Transportes — Belém/PA" },
+      { nome: "Depósito Região Norte", lat: -3.1190, lon: -60.0217, description: "Depósito Manaus (exemplo)" },
+      { nome: "Ponto de Apoio Maranhão", lat: -2.5297, lon: -44.3028, description: "Ponto de apoio em São Luís (exemplo)" }
+    ];
+
+    function loadFixedMarkersOnMap(){
+      clearFixedMarkers();
+      for(const p of marcacoesFixas){
+        createFixedMarker(p.lat, p.lon, p.nome, { description: p.description });
+      }
+      fixedLayerGroup[ fixedMarkersVisible ? 'addTo' : 'removeFrom' ]?.(map);
+    }
+
+    // toggle fixed markers
+    function toggleFixedMarkers(){
+      fixedMarkersVisible = !fixedMarkersVisible;
+      if(fixedMarkersVisible) fixedLayerGroup.addTo(map);
+      else map.removeLayer(fixedLayerGroup);
+    }
+
+    // ===================== BUSCAR DADOS / STATUS =====================
+    async function buscarDados(showLoading = true){
+      initMap();
+      clearTruckMarkers();
+      document.getElementById('frotaContainer').innerHTML = "<p class='text-center text-muted'>🔄 Carregando frota...</p>";
+      try{
+        if(showLoading) showLoadingOverlay(true);
+        const data = await fetchJsonSafe(`${scriptURL}?aba=status&t=${Date.now()}`);
+        if(!Array.isArray(data)) throw new Error('Formato de dados inesperado (esperado array).');
+        dadosFrota = data;
+
+        const total = dadosFrota.length;
+        const carreg = dadosFrota.filter(x => (x.Status||'').toLowerCase().includes('carregado')).length;
+        const descar = dadosFrota.filter(x => (x.Status||'').toLowerCase().includes('descarregando')).length;
+        const vazios = total - carreg - descar;
+        document.getElementById('resumoTexto').innerHTML = `Total: <b>${total}</b> | Carregados: <b style="color:green">${carreg}</b> | Descarregando: <b style="color:orange">${descar}</b> | Vazios: <b style="color:red">${vazios}</b>`;
+
+        // preencher filtros
+        const setStatus = new Set(), setProduto = new Set(), setDestino = new Set();
+        dadosFrota.forEach(r => { if(r.Status) setStatus.add(r.Status); if(r.Produto) setProduto.add(r.Produto); if(r.Destino) setDestino.add(r.Destino); });
+        const fill = (id, set) => {
+          const el = document.getElementById(id);
+          el.innerHTML = `<option value="">Todos</option>`;
+          Array.from(set).forEach(v => { if(v) el.innerHTML += `<option value="${v}">${v}</option>`; });
+        };
+        fill('filtroStatus', setStatus); fill('filtroProduto', setProduto); fill('filtroDestino', setDestino);
+
+        // build UI cards e marcadores
+        const cont = document.getElementById('frotaContainer');
+        cont.innerHTML = '';
+        const bounds = [];
+
+        // group trucks by 'Posição' ou cidade para geocode único
+        const groups = {};
+        for(const r of dadosFrota){
+          const posicao = (r['Posição'] || r.Posicao || r.Local || r.Localidade || r.Cidade || r.cidade || '').trim();
+          const key = posicao || `__row_${String(r.Frota||r.placa||Math.random()).slice(0,8)}`;
+          if(!groups[key]) groups[key] = [];
+          groups[key].push(r);
+        }
+
+        // iterate groups: try coords from row first, else geocode once per group
+        for(const [posKey, items] of Object.entries(groups)){
+          const posText = (items[0]['Posição'] || items[0].Posicao || items[0].Local || items[0].Localidade || items[0].Cidade || items[0].cidade || '').trim();
+          // if any item has explicit lat/lon, we'll use those per-row
+          let geoForGroup = null;
+          if(posText){
+            geoForGroup = await geocodeCity(posText);
+          }
+
+          for(let i=0;i<items.length;i++){
+            const r = items[i];
+            const frotaLabel = r.Frota || r.frota || r.Nome || r.Matricula || r.Placa || r.placa || '';
+            const plate = extractPlate(r);
+            const firstName = extractFirstName(r) || (frotaLabel ? String(frotaLabel).split(' ')[0] : '');
+            const status = r.Status || '';
+            const produto = r.Produto || r.PRODUTO || r.PRODUTO || '-';
+            const posicao = r['Posição'] || r.Posicao || r.Local || r.Cidade || r.cidade || '';
+            const destino = r.Destino || '-';
+
+            const card = document.createElement('div');
+            card.className = 'col-6 col-md-3';
+            card.innerHTML = `<div class="card p-2">
+              <h6>${frotaLabel ? frotaLabel : (plate ? plate + ' - ' + firstName : 'Veículo')}</h6>
+              <p class="small text-muted mb-1">${status}</p>
+              <p class="mb-0"><strong>Produto:</strong> ${produto}</p>
+              <p class="mb-0"><strong>Posição:</strong> ${posicao || '-'}</p>
+              <p class="mb-0"><strong>Destino:</strong> ${destino}</p>
+              <div class="mt-2"><button class="btn btn-sm btn-outline-success btn-map" data-idx="${i}" data-pos="${encodeURIComponent(posicao)}" data-frota="${encodeURIComponent(frotaLabel)}">📍 Mapa</button></div>
+            </div>`;
+            cont.appendChild(card);
+
+            // try to get coordinates: priority -> explicit lat/lon in row -> group geocode -> null
+            let coords = extractCoordsFromRow(r);
+            if(!coords && geoForGroup) coords = { lat: geoForGroup.lat, lon: geoForGroup.lon };
+
+            if(coords){
+              const [lat, lon] = jitterLatLng(coords.lat, coords.lon, i);
+              const popupHtml = `<strong>${frotaLabel}</strong><br><small><b>Placa:</b> ${plate || '-'}<br><b>Motorista:</b> ${firstName || '-'}<br><b>Status:</b> ${status || '-'}<br><b>Produto:</b> ${produto || '-'}<br><b>Destino:</b> ${destino || '-'}<br><b>Posição:</b> ${posicao || '-'}</small>
+                <div style="margin-top:6px"><a href="https://earth.google.com/web/@${lat},${lon},1000a,35y,0h,0t,0r" target="_blank" rel="noopener">🔭 Ver no Google Earth (3D)</a></div>`;
+              const m = createTruckMarker(lat, lon, frotaLabel, status, popupHtml);
+              if(m) bounds.push([lat, lon]);
+              const btn = card.querySelector('.btn-map');
+              if(btn) btn.addEventListener('click', ()=>{ map.setView([lat, lon], 12); try{ m.openPopup(); }catch(e){} });
+            } else {
+              const btn = card.querySelector('.btn-map');
+              if(btn) btn.addEventListener('click', ()=> alert('Localização não encontrada para: ' + posicao));
+            }
+          }
+        }
+
+        // ajustar bounds
+        if(bounds.length) try{ map.fitBounds(bounds, { padding:[80,80] }); }catch(e){}
+
+        // ensure fixed markers are (re)loaded
+        loadFixedMarkersOnMap();
+        if(!fixedMarkersVisible) map.removeLayer(fixedLayerGroup);
+
+      }catch(err){
+        console.error('Erro buscarDados', err);
+        document.getElementById('frotaContainer').innerHTML = "<p class='text-danger text-center'>Erro ao carregar frota. Veja o console para detalhes.</p>";
+        alert('Falha ao carregar dados de status. Verifique o endpoint do Google Script.');
+      } finally {
+        showLoadingOverlay(false);
+      }
+    }
+
+    // ===================== FILTROS =====================
+    document.getElementById('filtroStatus').addEventListener('change', aplicarFiltros);
+    document.getElementById('filtroProduto').addEventListener('change', aplicarFiltros);
+    document.getElementById('filtroDestino').addEventListener('change', aplicarFiltros);
+
+    async function aplicarFiltros(){
+      const fStatus = document.getElementById('filtroStatus').value.toLowerCase();
+      const fProduto = document.getElementById('filtroProduto').value.toLowerCase();
+      const fDestino = document.getElementById('filtroDestino').value.toLowerCase();
+      const filtrados = dadosFrota.filter(v =>
+        (!fStatus || (v.Status||'').toLowerCase().includes(fStatus)) &&
+        (!fProduto || (v.Produto||'').toLowerCase().includes(fProduto)) &&
+        (!fDestino || (v.Destino||'').toLowerCase().includes(fDestino))
+      );
+
+      clearTruckMarkers();
+      const cont = document.getElementById('frotaContainer');
+      cont.innerHTML = '';
+      const bounds=[];
+      const groups = {};
+      for(const r of filtrados){
+        const posicao = (r['Posição'] || r.Posicao || r.Local || r.Localidade || r.Cidade || r.cidade || '').trim();
+        const key = posicao || `__row_${Math.random().toString(36).slice(2,8)}`;
+        if(!groups[key]) groups[key] = [];
+        groups[key].push(r);
+      }
+
+      for(const [posKey, items] of Object.entries(groups)){
+        const posText = (items[0]['Posição'] || items[0].Posicao || items[0].Local || items[0].Localidade || items[0].Cidade || items[0].cidade || '').trim();
+        let geo = null;
+        if(posText) geo = await geocodeCity(posText);
+
+        for(let i=0;i<items.length;i++){
+          const r = items[i];
+          const frotaLabel = r.Frota || r.frota || r.Nome || r.Matricula || r.Placa || r.placa || '';
+          const plate = extractPlate(r);
+          const firstName = extractFirstName(r) || (frotaLabel ? String(frotaLabel).split(' ')[0] : '');
+          const status = r.Status || '';
+          const produto = r.Produto || r.PRODUTO || r.PRODUTO || '-';
+          const posicao = r['Posição'] || r.Posicao || r.Local || r.Cidade || r.cidade || '';
+          const destino = r.Destino || '-';
+
+          const card = document.createElement('div');
+          card.className = 'col-6 col-md-3';
+          card.innerHTML = `<div class="card p-2">
+            <h6>${frotaLabel ? frotaLabel : (plate ? plate + ' - ' + firstName : 'Veículo')}</h6>
+            <p class="small text-muted mb-1">${status}</p>
+            <p class="mb-0"><strong>Produto:</strong> ${produto}</p>
+            <p class="mb-0"><strong>Posição:</strong> ${posicao || '-'}</p>
+            <p class="mb-0"><strong>Destino:</strong> ${destino}</p>
+            <div class="mt-2"><button class="btn btn-sm btn-outline-success btn-map" data-idx="${i}" data-pos="${encodeURIComponent(posicao)}" data-frota="${encodeURIComponent(frotaLabel)}">📍 Mapa</button></div>
+          </div>`;
+          cont.appendChild(card);
+
+          let coords = extractCoordsFromRow(r);
+          if(!coords && geo) coords = { lat: geo.lat, lon: geo.lon };
+
+          if(coords){
+            const [lat, lon] = jitterLatLng(coords.lat, coords.lon, i);
+            const popupHtml = `<strong>${frotaLabel}</strong><br><small><b>Placa:</b> ${plate || '-'}<br><b>Motorista:</b> ${firstName || '-'}<br><b>Status:</b> ${status || '-'}<br><b>Produto:</b> ${produto || '-'}<br><b>Destino:</b> ${destino || '-'}<br><b>Posição:</b> ${posicao || '-'}</small>
+                <div style="margin-top:6px"><a href="https://earth.google.com/web/@${lat},${lon},1000a,35y,0h,0t,0r" target="_blank" rel="noopener">🔭 Ver no Google Earth (3D)</a></div>`;
+            const m = createTruckMarker(lat, lon, frotaLabel, status, popupHtml);
+            if(m) bounds.push([lat, lon]);
+            const btn = card.querySelector('.btn-map');
+            if(btn) btn.addEventListener('click', ()=>{ map.setView([lat, lon], 12); try{ m.openPopup(); }catch(e){} });
+          } else {
+            const btn = card.querySelector('.btn-map');
+            if(btn) btn.addEventListener('click', ()=> alert('Localização não encontrada para: ' + posicao));
+          }
+        }
+      }
+
+      if(bounds.length) try{ map.fitBounds(bounds, { padding:[80,80] }); }catch(e){}
+    }
+
+    // ===================== PRODUTIVIDADE =====================
+    async function loadProdutividade(){
+      clearCharts();
+      document.getElementById('kpiFaturamento').innerText = 'Carregando...';
+      try{
+        showLoadingOverlay(true);
+        const data = await fetchJsonSafe(`${scriptURL}?aba=produtividade&t=${Date.now()}`);
+        if(!Array.isArray(data)) throw new Error('Formato de dados inesperado (esperado array).');
+
+        const byCom = {}, byPeso = {};
+        let totalFat=0, totalCom=0, totalPeso=0, totalViagens=0;
+
+        data.forEach(r=>{
+          const motoristaFull = r.MOTORISTA || r.Motorista || r.motorista || '—';
+          const firstName = String(motoristaFull).split(' ')[0] || motoristaFull;
+          const peso = toNumber(r['PESO CARREGADO (TON)'] || r['PESO CARREGADO'] || r.PESO || 0);
+          const viagem = toNumber(r['VIAGEM'] || r.VIAGEM || 0);
+          const fat = toNumber(r['FATURAMENTO FRETE'] || r['FATURAMENTO'] || r.FATURAMENTO || 0);
+          const com = toNumber(r['COMISSÃO (12%)'] || r['COMISSÃO'] || r.COMISSAO || 0);
+
+          byPeso[firstName] = (byPeso[firstName]||0) + peso;
+          byCom[firstName] = (byCom[firstName]||0) + com;
+
+          totalPeso += peso; totalViagens += viagem; totalFat += fat; totalCom += com;
+        });
+
+        document.getElementById('kpiFaturamento').innerText = fmtBRL_noCents(totalFat);
+        document.getElementById('kpiComissao').innerText = fmtBRL_noCents(totalCom);
+        document.getElementById('kpiPesoTotal').innerText = totalPeso.toFixed(1);
+        document.getElementById('kpiViagensTotal').innerText = totalViagens;
+
+        // prepare Peso chart: ORDER from smallest -> largest
+        const pesoPairsAsc = Object.entries(byPeso).sort((a,b)=>a[1]-b[1]).slice(0,12);
+        const pesoLabels = pesoPairsAsc.map(p=>p[0]);
+        const pesoData = pesoPairsAsc.map(p=>p[1]);
+        const ctxP = document.getElementById('chartPesoMotorista').getContext('2d');
+
+        // colors: gradient from light to dark green by rank
+        const pesoColors = generateGradientColors(pesoData.length, '#c8e6c9', '#2e7d32');
+
+        charts.push(new Chart(ctxP, {
+          type:'bar',
+          data:{ labels:pesoLabels, datasets:[{ label:'Peso (ton)', data:pesoData, backgroundColor: pesoColors }] },
+          options:{
+            indexAxis:'y', responsive:true, maintainAspectRatio:false,
+            plugins:{ legend:{ display:false }, datalabels:{ anchor:'end', align:'right', formatter: v => v.toLocaleString('pt-BR',{maximumFractionDigits:1}) } },
+            scales:{ x:{ beginAtZero:true } }
+          },
+          plugins:[ChartDataLabels]
+        }));
+
+        // Comissão chart: ORDER from smallest -> largest
+        const comPairsAsc = Object.entries(byCom).sort((a,b)=>a[1]-b[1]).slice(0,12);
+        const comLabels = comPairsAsc.map(p=>p[0]);
+        const comData = comPairsAsc.map(p=>p[1]);
+        const ctxC = document.getElementById('chartComissaoMotorista').getContext('2d');
+
+        const comColors = generateGradientColors(comData.length, '#ffecb3', '#ff6f00'); // light -> dark orange
+
+        charts.push(new Chart(ctxC, {
+          type:'bar',
+          data:{ labels:comLabels, datasets:[{ label:'Comissão (R$)', data:comData, backgroundColor: comColors }] },
+          options:{
+            indexAxis:'y', responsive:true, maintainAspectRatio:false,
+            plugins:{ legend:{ display:false }, datalabels:{ anchor:'end', align:'right', formatter:v=>fmtBRL_noCents(v) } },
+            scales:{ x:{ beginAtZero:true } }
+          },
+          plugins:[ChartDataLabels]
+        }));
+
+      }catch(e){
+        console.error('Erro produtividade', e);
+        document.getElementById('kpiFaturamento').innerText='Erro';
+        document.getElementById('kpiComissao').innerText='Erro';
+        alert('Falha ao carregar dados de produtividade. Verifique a conexão ou o endpoint do Google Script.');
+      } finally {
+        showLoadingOverlay(false);
+      }
+    }
+
+    // gradient color generator (returns array of CSS color strings)
+    function generateGradientColors(n, startHex, endHex){
+      // simple linear interpolation in RGB
+      function hexToRgb(hex){ hex = hex.replace('#',''); return { r: parseInt(hex.substring(0,2),16), g: parseInt(hex.substring(2,4),16), b: parseInt(hex.substring(4,6),16) }; }
+      function rgbToHex(r,g,b){ return '#' + [r,g,b].map(v=>v.toString(16).padStart(2,'0')).join(''); }
+      const s = hexToRgb(startHex), e = hexToRgb(endHex);
+      const arr = [];
+      if(n <= 1) return [endHex];
+      for(let i=0;i<n;i++){
+        const t = i / Math.max(1, n-1);
+        const r = Math.round(s.r + (e.r - s.r) * t);
+        const g = Math.round(s.g + (e.g - s.g) * t);
+        const b = Math.round(s.b + (e.b - s.b) * t);
+        arr.push(rgbToHex(r,g,b));
+      }
+      return arr;
+    }
+
+    // ===================== VOLUME =====================
+    async function loadVolume(){
+      clearCharts();
+      document.getElementById('kpiVolumeTotal').innerText = '--';
+      const container = document.getElementById('volumeByFazenda');
+      container.innerHTML = "<p class='text-center text-muted'>🔄 Carregando volume...</p>";
+
+      try{
+        showLoadingOverlay(true);
+        const data = await fetchJsonSafe(`${scriptURL}?aba=volume&t=${Date.now()}`);
+        if(!Array.isArray(data)) throw new Error('Formato de dados inesperado (esperado array).');
+
+        const byFaz = {};
+        let totalEnt = 0;
+        data.forEach(r=>{
+          const faz = (r.FAZENDA || r.Fazenda || r.fazenda || '').trim();
+          const prod = (r.PRODUTO || r.Produto || r.produto || '').trim();
+          const pedido = r.Pedido || r.PEDIDO || r.pedido || '';
+          const vol = toNumber(r['VOLUME ENTEGUE (TON)'] || r['VOLUME ENTREGUE (TON)'] || r.VOLUME || 0);
+          const saldo = toNumber(r.Saldo || r.SALDO || r.saldo || 0);
+          if(!faz || !prod) return;
+          if(!byFaz[faz]) byFaz[faz] = {};
+          if(!byFaz[faz][prod]) byFaz[faz][prod] = { pedido: null, entregue:0, saldo:0 };
+          if(pedido !== '' && pedido !== null) byFaz[faz][prod].pedido = pedido;
+          byFaz[faz][prod].entregue += vol;
+          byFaz[faz][prod].saldo += saldo;
+          totalEnt += vol;
+        });
+
+        document.getElementById('kpiVolumeTotal').innerText = totalEnt.toLocaleString('pt-BR',{maximumFractionDigits:1}) + " ton";
+
+        const fazendas = Object.keys(byFaz).sort();
+        if(fazendas.length === 0){
+          container.innerHTML = "<p class='text-muted'>Nenhum registro de volume encontrado.</p>";
+          return;
+        }
+
+        let html = '';
+        for(const faz of fazendas){
+          html += `<div class="card mb-2 p-2"><strong>🌾 ${faz}</strong>`;
+          const products = Object.entries(byFaz[faz]).sort((a,b)=>b[1].entregue - a[1].entregue);
+          html += `<div class="mt-2">`;
+          products.forEach(([prod, info])=>{
+            const pedidoTxt = info.pedido !== null && info.pedido !== '' ? String(info.pedido) : '-';
+            html += `<div style="padding:8px 0;border-bottom:1px dashed #eee">
+              <div style="font-weight:600">${prod}</div>
+              <div style="font-size:0.95rem;color:#444">Pedido: <b>${pedidoTxt}</b> | Entregue: <b>${info.entregue.toLocaleString('pt-BR',{maximumFractionDigits:1})} ton</b> | Saldo: <b>${info.saldo.toLocaleString('pt-BR',{maximumFractionDigits:1})} ton</b></div>
+            </div>`;
+          });
+          html += `</div></div>`;
+        }
+        container.innerHTML = html;
+
+      }catch(err){
+        console.error('Erro loadVolume', err);
+        container.innerHTML = "<p class='text-danger'>Erro ao carregar volume. Veja o console para mais detalhes.</p>";
+        alert('Falha ao carregar dados de volume. Verifique a conexão ou o endpoint do Google Script.');
+      } finally {
+        showLoadingOverlay(false);
+      }
+    }
+
+    // ===================== UI / EVENTS =====================
+    const btnStatus = document.getElementById('btnStatus');
+    const btnProd = document.getElementById('btnProd');
+    const btnVolume = document.getElementById('btnVolume');
+    const refreshBtnTop = document.getElementById('refreshBtnTop');
+    const darkModeTop = document.getElementById('darkModeTop');
+    const appLegend = document.getElementById('appLegend');
+    const toggleFixedBtn = document.getElementById('toggleFixedMarkers');
+
+    function setLegend(key){
+      if(key==='status') appLegend.innerText = "🚛 Status da Frota — Região: Pará & Maranhão";
+      if(key==='prod') appLegend.innerText = "📈 Painel de Produtividade";
+      if(key==='volume') appLegend.innerText = "📊 Relatório de Volume Entregue";
+    }
+    function activateTab(btn, sectionId, key){
+      document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('active'));
+      btn.classList.add('active');
+      document.querySelectorAll('.section').forEach(s=>s.classList.remove('active'));
+      document.getElementById(sectionId).classList.add('active');
+      setLegend(key);
+    }
+
+    btnStatus.addEventListener('click', ()=>{ activateTab(btnStatus,'sectionStatus','status'); buscarDados(); });
+    btnProd.addEventListener('click', ()=>{ activateTab(btnProd,'sectionProd','prod'); loadProdutividade(); });
+    btnVolume.addEventListener('click', ()=>{ activateTab(btnVolume,'sectionVolume','volume'); loadVolume(); });
+    refreshBtnTop.addEventListener('click', ()=>{ if(document.getElementById('sectionStatus').classList.contains('active')) buscarDados(false); else if(document.getElementById('sectionProd').classList.contains('active')) loadProdutividade(); else loadVolume(); });
+    darkModeTop.addEventListener('click', ()=> document.body.classList.toggle('dark-mode'));
+    toggleFixedBtn.addEventListener('click', ()=> { toggleFixedMarkers(); toggleFixedBtn.classList.toggle('active'); });
+
+    const urlParams = new URLSearchParams(window.location.search);
+    const initial = (urlParams.get('aba') || 'status').toLowerCase();
+
+    function showLoadingOverlay(on){
+      const el = document.getElementById('loading');
+      el.style.display = on ? 'flex' : 'none';
+    }
+
+    window.addEventListener('load', ()=>{ 
+      initMap();
+      // initial content load
+      if(initial === 'produtividade' || initial === 'prod') { activateTab(btnProd,'sectionProd','prod'); loadProdutividade(); }
+      else if(initial === 'volume') { activateTab(btnVolume,'sectionVolume','volume'); loadVolume(); }
+      else { activateTab(btnStatus,'sectionStatus','status'); buscarDados(); }
+
+      // register service worker if present
+      if('serviceWorker' in navigator){
+        navigator.serviceWorker.register('./service-worker.js').then(()=>console.log('SW registrado')).catch(()=>console.warn('SW registra falhou'));
+      }
+    });
+
+    // expose small utils for debugging
+    window.souza_clearGeocodeCache = function(){ try{ localStorage.removeItem(geocodeCacheKey); alert('Cache limpo'); }catch(e){ alert('Erro ao limpar cache'); } };
+    window.souza_toggleFixedMarkers = toggleFixedMarkers;
+
+  })();
+  </script>
 </body>
 </html>
