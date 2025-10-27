@@ -346,24 +346,29 @@ const marcacoesFixas = [
 
 // Função para escolher o ícone de acordo com o tipo
 function getFixedIcon(tipo) {
-  let emoji = "📍";
-  let color = "#2e7d32"; // verde padrão
+  // Garante que sempre haja uma string minúscula sem acento
+  let t = (tipo || "").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim();
 
-  switch ((tipo || "").toLowerCase()) {
+  let emoji = "📍";
+  let color = "#ff9800"; // laranja padrão
+
+  switch (t) {
     case "fazenda":
       emoji = "🌾";
+      color = "#2e7d32"; // verde
       break;
     case "fabrica":
       emoji = "🏭";
+      color = "#007bff"; // azul
       break;
     case "sede":
       emoji = "🏠";
+      color = "#6c757d"; // cinza
       break;
     case "calcario":
       emoji = "⚒️";
+      color = "#d32f2f"; // vermelho
       break;
-    default:
-      emoji = "📍";
   }
 
   return L.divIcon({
@@ -388,6 +393,7 @@ function getFixedIcon(tipo) {
     popupAnchor: [0, -15],
   });
 }
+
 
 // Função para criar o marcador fixo
 function createFixedMarker(lat, lon, name, opts = {}) {
