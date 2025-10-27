@@ -310,102 +310,14 @@
       return [lat + Math.sin(rad)*r, lon + Math.cos(rad)*r];
     }
 
- // ===================== FIXED MARKERS (personalizados) =====================
-
-// 🧭 Marcadores fixos com ícones e cores diferentes
-const marcacoesFixas = [
-  { nome: "Faz. Santa Angelica", lat: -3.586289, lon: -47.345423, description: "Fazenda Santa Angélica", tipo: "fazenda" },
-  { nome: "Fertilizante (Mosaic)", lat: -2.679965, lon: -44.280649, description: "Armazém Mosaic", tipo: "fabrica" },
-  { nome: "Sede Maria Júlia", lat: -3.022706, lon: -47.098478, description: "Pátio / Escritório Central", tipo: "sede" },
-  { nome: "Calcário (Calmap)", lat: -6.31599, lon: -48.56346, description: "Fornecedor de Calcário", tipo: "calcario" },
-];
-
-// Função para escolher o ícone de acordo com o tipo
-function getFixedIcon(tipo) {
-  // Garante que sempre haja uma string minúscula sem acento
-  let t = (tipo || "").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim();
-
-  let emoji = "📍";
-
-  switch (t) {
-    case "fazenda":
-      emoji = "🌾";
-      color = "#2e7d32"; // verde
-      break;
-    case "fabrica":
-      emoji = "🏭";
-      color = "#007bff"; // azul
-      break;
-    case "sede":
-      emoji = "🏠";
-      color = "#6c757d"; // cinza
-      break;
-    case "calcario":
-      emoji = "⚒️";
-      color = "#d32f2f"; // vermelho
-      break;
-  }
-
-  return L.divIcon({
-    className: "fixed-marker-icon",
-    html: `
-      <div style="
-        display:inline-flex;
-        align-items:center;
-        justify-content:center;
-        background:${color};
-        color:white;
-        border-radius:50%;
-        width:34px;
-        height:34px;
-        font-size:20px;
-        box-shadow:0 2px 6px rgba(0,0,0,0.3);
-      ">
-        ${emoji}
-      </div>`,
-    iconSize: [34, 34],
-    iconAnchor: [17, 17],
-    popupAnchor: [0, -15],
-  });
-}
-
-
-// Função para criar o marcador fixo
-function createFixedMarker(lat, lon, name, opts = {}) {
-  const icon = getFixedIcon(opts.tipo);
-  const mm = L.marker([lat, lon], { title: name, icon, riseOnHover: true });
-  const popupHtml = `<strong>${name}</strong><br><small>${opts.description || ""}</small>`;
-  mm.bindPopup(popupHtml);
-  fixedLayerGroup.addLayer(mm);
-  fixedMarkers.push(mm);
-  return mm;
-}
-
-// Carregar marcadores fixos no mapa
-function loadFixedMarkersOnMap() {
-  clearFixedMarkers();
-  for (const p of marcacoesFixas) {
-    createFixedMarker(p.lat, p.lon, p.nome, { description: p.description, tipo: p.tipo });
-  }
-  if (fixedMarkersVisible) fixedLayerGroup.addTo(map);
-  else map.removeLayer(fixedLayerGroup);
-}
-
-
-    function loadFixedMarkersOnMap(){
-      clearFixedMarkers();
-      for(const p of marcacoesFixas){
-        createFixedMarker(p.lat, p.lon, p.nome, { description: p.description });
-      }
-      fixedLayerGroup[ fixedMarkersVisible ? 'addTo' : 'removeFrom' ]?.(map);
-    }
-
-    // toggle fixed markers
-    function toggleFixedMarkers(){
-      fixedMarkersVisible = !fixedMarkersVisible;
-      if(fixedMarkersVisible) fixedLayerGroup.addTo(map);
-      else map.removeLayer(fixedLayerGroup);
-    }
+  // ===================== FIXED MARKERS (exemplos) =====================
+    // Você pode editar/adicionar marcacoesFixas com suas coordenadas reais
+    const marcacoesFixas = [
+      { nome: "Faz. Santa Angelica", lat: -3.5862890625277597, lon: -47.345423192202894, description: "Faz Santa Angelica" },
+      { nome: "Fertilizante", lat: -2.679965290615716, lon: -44.2806498758657, description: "Mosaic" },
+      { nome: "Sede", lat: -3.022706866171312, lon: -47.098478490620806, description: "Maria Julia" },
+      { nome: "Calcario", lat: -6.315990248847169, lon: -48.56346345509689, description: "Calmap" },
+    ];
 
     // ===================== BUSCAR DADOS / STATUS =====================
     async function buscarDados(showLoading = true){
