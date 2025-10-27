@@ -121,7 +121,7 @@
   <script>
   (function(){
     // ===================== CONFIG =====================
-    const scriptURL = "https://script.google.com/macros/s/AKfycbxPPNG0ASKTeepIX5e480DS0jN6QAYuLD4IhPRqe7MdeRw5uVm9HMhcpAAUs7fEt5Kl/exec";
+    const scriptURL = "https://script.google.com/macros/s/AKfycbyZDvHD4CCG4xAbuIjckNApANUkDow8uifF96C1R5DRKd4soQJVZKvNoWJ6hLDPyc5n/exec";
     const geocodeCacheKey = 'souza_geocode_cache_v4';
     const fixedMarkersStorageKey = 'souza_fixed_markers_v1';
     const fmtBRL_noCents = v => new Intl.NumberFormat('pt-BR',{style:'currency',currency:'BRL',maximumFractionDigits:0}).format(Math.round(v));
@@ -341,7 +341,7 @@
       document.getElementById('frotaContainer').innerHTML = "<p class='text-center text-muted'>🔄 Carregando frota...</p>";
       try{
         if(showLoading) showLoadingOverlay(true);
-        const data = await fetchJsonSafe(`${scriptURL}?aba=Status Frota&t=${Date.now()}`);
+        const data = await fetchJsonSafe(`${scriptURL}?aba=status&t=${Date.now()}`);
         if(!Array.isArray(data)) throw new Error('Formato de dados inesperado (esperado array).');
         dadosFrota = data;
 
@@ -378,17 +378,11 @@
         // iterate groups: try coords from row first, else geocode once per group
         for(const [posKey, items] of Object.entries(groups)){
           const posText = (items[0]['Posição'] || items[0].Posicao || items[0].Local || items[0].Localidade || items[0].Cidade || items[0].cidade || '').trim();
-          // Prioriza latitude/longitude — só usa cidade se estiverem vazias
+          // if any item has explicit lat/lon, we'll use those per-row
           let geoForGroup = null;
-           const hasCoords = items.some(r => {
-  const lat = r.Latitude || r.latitude || r.LATITUDE;
-  const lon = r.Longitude || r.longitude || r.LONGITUDE;
-  return lat && lon;
-});
-if (!hasCoords && posText) {
-  geoForGroup = await geocodeCity(posText);
-}
-
+          if(posText){
+            geoForGroup = await geocodeCity(posText);
+          }
 
           for(let i=0;i<items.length;i++){
             const r = items[i];
