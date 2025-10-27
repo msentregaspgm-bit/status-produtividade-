@@ -378,11 +378,17 @@
         // iterate groups: try coords from row first, else geocode once per group
         for(const [posKey, items] of Object.entries(groups)){
           const posText = (items[0]['Posição'] || items[0].Posicao || items[0].Local || items[0].Localidade || items[0].Cidade || items[0].cidade || '').trim();
-          // if any item has explicit lat/lon, we'll use those per-row
+          // Prioriza latitude/longitude — só usa cidade se estiverem vazias
           let geoForGroup = null;
-          if(posText){
-            geoForGroup = await geocodeCity(posText);
-          }
+           const hasCoords = items.some(r => {
+  const lat = r.Latitude || r.latitude || r.LATITUDE;
+  const lon = r.Longitude || r.longitude || r.LONGITUDE;
+  return lat && lon;
+});
+if (!hasCoords && posText) {
+  geoForGroup = await geocodeCity(posText);
+}
+
 
           for(let i=0;i<items.length;i++){
             const r = items[i];
