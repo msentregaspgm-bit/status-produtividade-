@@ -310,29 +310,49 @@
       return [lat + Math.sin(rad)*r, lon + Math.cos(rad)*r];
     }
 
- // ===================== FIXED MARKERS (exemplos) =====================
-    // Você pode editar/adicionar marcacoesFixas com suas coordenadas reais
-    const marcacoesFixas = [
-      { nome: "Faz. Santa Angelica", lat: -3.5862890625277597, lon: -47.345423192202894, description: "Faz Santa Angelica" },
-      { nome: "Fertilizante", lat: -2.679965290615716, lon: -44.2806498758657, description: "Mosaic" },
-      { nome: "Sede", lat: -3.022706866171312, lon: -47.098478490620806, description: "Maria Julia" },
-      { nome: "Calcario", lat: -6.315990248847169, lon: -48.56346345509689, description: "Calmap" },
-    ];
+// ===================== FIXED MARKERS =====================
+const marcacoesFixas = [
+  { nome: "Faz. Santa Angelica", lat: -3.5862890625277597, lon: -47.345423192202894, description: "Faz Santa Angelica", tipo: "fazenda" },
+  { nome: "Fertilizante", lat: -2.679965290615716, lon: -44.2806498758657, description: "Mosaic", tipo: "fertilizante" },
+  { nome: "Sede", lat: -3.022706866171312, lon: -47.098478490620806, description: "Maria Julia", tipo: "sede" },
+  { nome: "Calcario", lat: -6.315990248847169, lon: -48.56346345509689, description: "Calmap", tipo: "calcario" },
+];
 
-    function loadFixedMarkersOnMap(){
-      clearFixedMarkers();
-      for(const p of marcacoesFixas){
-        createFixedMarker(p.lat, p.lon, p.nome, { description: p.description });
-      }
-      fixedLayerGroup[ fixedMarkersVisible ? 'addTo' : 'removeFrom' ]?.(map);
-    }
+// Mapeia cada tipo para um ícone
+const iconesPorTipo = {
+  fazenda: "imagens/fazenda.png",
+  fertilizante: "imagens/fertilizante.png",
+  sede: "imagens/sede.png",
+  calcario: "imagens/calcario.png",
+  default: "imagens/default.png"
+};
 
-    // toggle fixed markers
-    function toggleFixedMarkers(){
-      fixedMarkersVisible = !fixedMarkersVisible;
-      if(fixedMarkersVisible) fixedLayerGroup.addTo(map);
-      else map.removeLayer(fixedLayerGroup);
-    }
+function createFixedMarker(lat, lon, nome, options, tipo){
+  const iconUrl = iconesPorTipo[tipo] || iconesPorTipo.default;
+
+  const icon = L.icon({
+    iconUrl: iconUrl,
+    iconSize: [32, 32],
+    iconAnchor: [16, 32],
+    popupAnchor: [0, -32]
+  });
+
+  const marker = L.marker([lat, lon], { icon: icon });
+
+  if(options.description){
+    marker.bindPopup(`<b>${nome}</b><br>${options.description}`);
+  }
+
+  fixedLayerGroup.addLayer(marker);
+}
+
+function loadFixedMarkersOnMap(){
+  clearFixedMarkers();
+  for(const p of marcacoesFixas){
+    createFixedMarker(p.lat, p.lon, p.nome, { description: p.description }, p.tipo);
+  }
+  fixedLayerGroup[ fixedMarkersVisible ? 'addTo' : 'removeFrom' ]?.(map);
+}
 
     // ===================== BUSCAR DADOS / STATUS =====================
     async function buscarDados(showLoading = true){
