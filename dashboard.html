@@ -341,7 +341,7 @@
       document.getElementById('frotaContainer').innerHTML = "<p class='text-center text-muted'>🔄 Carregando frota...</p>";
       try{
         if(showLoading) showLoadingOverlay(true);
-        const data = await fetchJsonSafe(`${scriptURL}?aba=status&t=${Date.now()}`);
+        const data = await fetchJsonSafe(`${scriptURL}?aba=Status Frota&t=${Date.now()}`);
         if(!Array.isArray(data)) throw new Error('Formato de dados inesperado (esperado array).');
         dadosFrota = data;
 
