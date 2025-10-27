@@ -352,23 +352,18 @@ function getFixedIcon(tipo) {
   switch ((tipo || "").toLowerCase()) {
     case "fazenda":
       emoji = "🌾";
-      color = "#2e7d32"; // verde
       break;
     case "fabrica":
       emoji = "🏭";
-      color = "#007bff"; // azul
       break;
     case "sede":
       emoji = "🏠";
-      color = "#6c757d"; // cinza
       break;
     case "calcario":
       emoji = "⚒️";
-      color = "#d32f2f"; // vermelho
       break;
     default:
       emoji = "📍";
-      color = "#ff9800"; // laranja
   }
 
   return L.divIcon({
