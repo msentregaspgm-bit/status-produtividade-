@@ -310,7 +310,7 @@
       return [lat + Math.sin(rad)*r, lon + Math.cos(rad)*r];
     }
 
-  // ===================== FIXED MARKERS (exemplos) =====================
+ // ===================== FIXED MARKERS (exemplos) =====================
     // Você pode editar/adicionar marcacoesFixas com suas coordenadas reais
     const marcacoesFixas = [
       { nome: "Faz. Santa Angelica", lat: -3.5862890625277597, lon: -47.345423192202894, description: "Faz Santa Angelica" },
@@ -318,6 +318,21 @@
       { nome: "Sede", lat: -3.022706866171312, lon: -47.098478490620806, description: "Maria Julia" },
       { nome: "Calcario", lat: -6.315990248847169, lon: -48.56346345509689, description: "Calmap" },
     ];
+
+    function loadFixedMarkersOnMap(){
+      clearFixedMarkers();
+      for(const p of marcacoesFixas){
+        createFixedMarker(p.lat, p.lon, p.nome, { description: p.description });
+      }
+      fixedLayerGroup[ fixedMarkersVisible ? 'addTo' : 'removeFrom' ]?.(map);
+    }
+
+    // toggle fixed markers
+    function toggleFixedMarkers(){
+      fixedMarkersVisible = !fixedMarkersVisible;
+      if(fixedMarkersVisible) fixedLayerGroup.addTo(map);
+      else map.removeLayer(fixedLayerGroup);
+    }
 
     // ===================== BUSCAR DADOS / STATUS =====================
     async function buscarDados(showLoading = true){
