@@ -320,43 +320,12 @@ const marcacoesFixas = [
   { nome: "Calcário (Calmap)", lat: -6.31599, lon: -48.56346, description: "Fornecedor de Calcário", tipo: "calcario" },
 ];
 
-  {
-    nome: "Faz. Santa Angelica",
-    lat: -3.5862890625277597,
-    lon: -47.345423192202894,
-    description: "Fazenda Santa Angélica",
-    tipo: "fazenda",
-  },
-  {
-    nome: "Fertilizante (Mosaic)",
-    lat: -2.679965290615716,
-    lon: -44.2806498758657,
-    description: "Armazém Mosaic",
-    tipo: "fabrica",
-  },
-  {
-    nome: "Sede Maria Júlia",
-    lat: -3.022706866171312,
-    lon: -47.098478490620806,
-    description: "Pátio / Escritório Central",
-    tipo: "sede",
-  },
-  {
-    nome: "Calcário (Calmap)",
-    lat: -6.315990248847169,
-    lon: -48.56346345509689,
-    description: "Fornecedor de Calcário",
-    tipo: "calcario",
-  },
-];
-
 // Função para escolher o ícone de acordo com o tipo
 function getFixedIcon(tipo) {
   // Garante que sempre haja uma string minúscula sem acento
   let t = (tipo || "").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim();
 
   let emoji = "📍";
-  let color = "#ff9800"; // laranja padrão
 
   switch (t) {
     case "fazenda":
