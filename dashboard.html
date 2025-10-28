@@ -318,7 +318,9 @@ const marcacoesFixas = [
   { nome: "Calcario", lat: -6.315990248847169, lon: -48.56346345509689, description: "Calmap", tipo: "calcario" },
   { nome: "Pingo de Ouro", lat: -3.8435993, lon: -47.7101285, description: "Pingo de Ouro", tipo: "pingodeouro" },
   { nome: "Hidrovias", lat: -1.509747, lon: -48.7204514, description: "Hidrovias", tipo: "hidrovias" },
-  { nome: "EuroChem", lat: -1.5754797, lon: -48.7708808, description: "EuroChem", tipo: "eurochem" }
+  { nome: "EuroChem", lat: -1.5754797, lon: -48.7708808, description: "EuroChem", tipo: "eurochem" },
+  { nome: "Gees", lat: -2.580348, lon: -44.3519742, description: "Gees", tipo: "gees" },
+  { nome: "Posto Valen", lat: -2.6145971, lon: -44.3219929, description: "Triagem", tipo: "triagem" }
 ];
 
 // Mapeia cada tipo para um ícone
@@ -330,7 +332,9 @@ const iconesPorTipo = {
   default: "default.png",
   pingodeouro: "pingodeouro.png",
   hidrovias: "hidrovias.png",
-  eurochem: "eurochem.png"
+  eurochem: "eurochem.png",
+  gees: "gees.png",
+  triagem: "triagem.png"
 };
 
 function createFixedMarker(lat, lon, nome, options, tipo){
