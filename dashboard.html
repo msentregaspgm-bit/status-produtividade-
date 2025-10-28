@@ -312,19 +312,19 @@
 
 // ===================== FIXED MARKERS =====================
 const marcacoesFixas = [
-  { nome: "faz.santa angelica", lat: -3.5862890625277597, lon: -47.345423192202894, description: "Faz Santa Angelica", tipo: "faz.santa angelica" },
+  { nome: "Faz. Santa Angelica", lat: -3.5862890625277597, lon: -47.345423192202894, description: "Faz Santa Angelica", tipo: "fazenda" },
   { nome: "Fertilizante", lat: -2.679965290615716, lon: -44.2806498758657, description: "Mosaic", tipo: "fertilizante" },
-  { nome: "faz. maria julia", lat: -3.022706866171312, lon: -47.098478490620806, description: "Maria Julia", tipo: "faz. maria julia" },
+  { nome: "Sede", lat: -3.022706866171312, lon: -47.098478490620806, description: "Maria Julia", tipo: "sede" },
   { nome: "Calcario", lat: -6.315990248847169, lon: -48.56346345509689, description: "Calmap", tipo: "calcario" },
 ];
 
 // Mapeia cada tipo para um ícone
 const iconesPorTipo = {
-  faz.santa angelica: "faz. santa angelica.png",
-  fertilizante: "fertilizante.png",
-  faz. maria julia: "faz. maria julia.png",
-  calcario: "calcario.png",
-  default: "default.png"
+  fazenda: "imagens/fazenda.png",
+  fertilizante: "imagens/fertilizante.png",
+  sede: "imagens/sede.png",
+  calcario: "imagens/calcario.png",
+  default: "imagens/default.png"
 };
 
 function createFixedMarker(lat, lon, nome, options, tipo){
