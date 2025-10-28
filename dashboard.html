@@ -316,6 +316,7 @@ const marcacoesFixas = [
   { nome: "Fertilizante", lat: -2.679965290615716, lon: -44.2806498758657, description: "Mosaic", tipo: "fertilizante" },
   { nome: "Sede", lat: -3.022706866171312, lon: -47.098478490620806, description: "Maria Julia", tipo: "sede" },
   { nome: "Calcario", lat: -6.315990248847169, lon: -48.56346345509689, description: "Calmap", tipo: "calcario" },
+  { nome: "Pingo de Ouro", lat: -3.8435993, lon: -47.7101285, description: "Pingo de Ouro", tipo: "pingodeouro" },
 ];
 
 // Mapeia cada tipo para um ícone
@@ -324,7 +325,8 @@ const iconesPorTipo = {
   fertilizante: "fertilizante.png",
   sede: "sede.png",
   calcario: "calcario.png",
-  default: "default.png"
+  default: "default.png",
+  pingodeouro: "pingodeouro.png"
 };
 
 function createFixedMarker(lat, lon, nome, options, tipo){
