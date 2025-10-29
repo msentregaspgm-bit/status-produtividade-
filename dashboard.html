@@ -5,12 +5,17 @@
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>Souza Transportes — Dashboard</title>
 
+  <!-- PWA manifest -->
   <link rel="manifest" href="manifest.json">
   <meta name="theme-color" content="#2e7d32">
-  <meta name="apple-mobile-web-app-capable" content="yes">
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
 
+  <!-- Bootstrap, Leaflet, Chart.js, DataLabels -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" defer></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js" defer></script>
+  <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2" defer></script>
+
   <style>
     :root{ --verde-souza:#2e7d32; --bg:#ffffff; --card-bg:#ffffff; --muted:#6c757d; }
     body{ background:var(--bg); color:#222; font-family:Inter, "Segoe UI", Roboto, Arial, sans-serif; padding:12px; transition:background .25s,color .25s; }
@@ -35,16 +40,11 @@
     .footer{ text-align:center; color:var(--muted); margin-top:14px; font-size:0.85rem; }
     @media(max-width:768px){ #map{ height:420px; } h1{ font-size:18px; } canvas{ max-height:260px !important; height:260px !important; } }
 
-    /* small UI additions */
+    .truck-label { display:inline-flex; align-items:center; gap:6px; padding:4px 8px; border-radius:8px; font-size:12px; font-weight:600; background:rgba(255,255,255,0.92); box-shadow:0 1px 3px rgba(0,0,0,0.18); white-space:nowrap; }
+    .truck-label .truck-emoji { margin-right:4px; }
+    .leaflet-control.custom-fullscreen a { background:#fff; padding:6px; border-radius:6px; display:inline-block; box-shadow:0 1px 3px rgba(0,0,0,0.2); }
     .loading-overlay { position:fixed; left:0; right:0; top:0; bottom:0; display:flex; align-items:center; justify-content:center; background:rgba(255,255,255,0.6); z-index:1200; font-size:1.1rem; color:#333; }
     body.dark-mode .loading-overlay { background:rgba(0,0,0,0.6); color:#eee; }
-    .spinner-border { width:3rem; height:3rem; }
-    #installBtn { position:fixed; bottom:90px; right:18px; z-index:1300; display:none; }
-    #backToTop { position:fixed; bottom:18px; right:18px; z-index:1300; display:none; }
-    .kpi-card-accent { border-left:6px solid var(--verde-souza); padding-left:10px; }
-
-    .top-right-meta { text-align:right; font-size:0.9rem; color:var(--muted); }
-
   </style>
 </head>
 <body>
@@ -56,11 +56,8 @@
         <div id="appLegend" class="app-legend">🚛 Status da Frota — Região: Pará & Maranhão</div>
       </div>
       <div style="text-align:right">
-        <div class="top-right-meta" id="lastUpdate">Última atualização: —</div>
-        <div style="margin-top:6px">
-          <button id="refreshBtnTop" class="btn btn-success btn-icon" title="Atualizar">🔄</button>
-          <button id="darkModeTop" class="btn btn-outline-dark btn-icon" title="Modo Escuro">🌙</button>
-        </div>
+        <button id="refreshBtnTop" class="btn btn-success btn-icon" title="Atualizar">🔄</button>
+        <button id="darkModeTop" class="btn btn-outline-dark btn-icon" title="Modo Escuro">🌙</button>
       </div>
     </header>
 
@@ -69,25 +66,19 @@
       <button id="btnProd" class="btn btn-outline-warning nav-btn" title="Produtividade">📈</button>
       <button id="btnVolume" class="btn btn-outline-primary nav-btn" title="Volume Entregue">📊</button>
       <button id="btnPneus" class="btn btn-outline-dark nav-btn" title="Pneus" onclick="window.open('https://pneus-souza.vercel.app/', '_blank')">
-        🛞
+        <img src="logoPneu.png" alt="Pneu" width="24" height="24">
       </button>
       <button id="toggleFixedMarkers" class="btn btn-outline-info nav-btn" title="Mostrar/Ocultar pontos fixos">📌</button>
     </div>
 
     <!-- STATUS -->
     <div id="sectionStatus" class="section active">
-      <div class="mb-2 d-flex justify-content-between align-items-center">
-        <div>
-          <div style="font-weight:600; margin-bottom:6px;">Filtrar por Status, Produto e Destino:</div>
-          <div class="d-flex gap-2 flex-wrap">
-            <select id="filtroStatus" class="form-select form-select-sm" style="width:220px"><option value="">Todos os Status</option></select>
-            <select id="filtroProduto" class="form-select form-select-sm" style="width:220px"><option value="">Todos os Produtos</option></select>
-            <select id="filtroDestino" class="form-select form-select-sm" style="width:220px"><option value="">Todos os Destinos</option></select>
-          </div>
-        </div>
-        <div class="d-flex gap-2">
-          <button id="exportStatusCSV" class="btn btn-outline-secondary btn-sm">💾 Exportar CSV</button>
-          <button id="clearFilters" class="btn btn-outline-danger btn-sm">Limpar filtros</button>
+      <div class="mb-2">
+        <div style="font-weight:600; margin-bottom:6px;">Filtrar por Status, Produto e Destino:</div>
+        <div class="d-flex gap-2 flex-wrap">
+          <select id="filtroStatus" class="form-select form-select-sm" style="width:220px"><option value="">Todos os Status</option></select>
+          <select id="filtroProduto" class="form-select form-select-sm" style="width:220px"><option value="">Todos os Produtos</option></select>
+          <select id="filtroDestino" class="form-select form-select-sm" style="width:220px"><option value="">Todos os Destinos</option></select>
         </div>
       </div>
 
@@ -101,23 +92,15 @@
     <!-- PRODUTIVIDADE -->
     <div id="sectionProd" class="section">
       <div class="row g-3 mb-2">
-        <div class="col-md-3"><div class="card card-kpi kpi-card-accent"><div class="kpi-label">Faturamento Total</div><div id="kpiFaturamento" class="kpi-value">--</div></div></div>
+        <div class="col-md-3"><div class="card card-kpi"><div class="kpi-label">Faturamento Total</div><div id="kpiFaturamento" class="kpi-value">--</div></div></div>
         <div class="col-md-3"><div class="card card-kpi"><div class="kpi-label">Comissão Total</div><div id="kpiComissao" class="kpi-value">--</div></div></div>
         <div class="col-md-3"><div class="card card-kpi"><div class="kpi-label">Peso Total (ton)</div><div id="kpiPesoTotal" class="kpi-value">--</div></div></div>
         <div class="col-md-3"><div class="card card-kpi"><div class="kpi-label">Viagens</div><div id="kpiViagensTotal" class="kpi-value">--</div></div></div>
       </div>
 
       <div class="row g-3">
-        <div class="col-md-6"><div class="chart-card"><h6>Top 5 Motoristas — Peso Carregado</h6><canvas id="chartTop5"></canvas></div></div>
+        <div class="col-md-6"><div class="chart-card"><h6>Peso por Motorista</h6><canvas id="chartPesoMotorista"></canvas></div></div>
         <div class="col-md-6"><div class="chart-card"><h6>Comissão por Motorista</h6><canvas id="chartComissaoMotorista"></canvas></div></div>
-      </div>
-
-      <div class="row g-3 mt-2">
-        <div class="col-12"><div class="chart-card"><h6>Produtividade ao longo do tempo</h6><canvas id="chartHistoric"></canvas></div></div>
-      </div>
-
-      <div class="mt-2 d-flex justify-content-end">
-        <button id="exportProdCSV" class="btn btn-outline-secondary btn-sm">💾 Exportar CSV</button>
       </div>
     </div>
 
@@ -128,164 +111,269 @@
       </div>
 
       <div id="volumeByFazenda" class="mt-2"></div>
-
-      <div class="mt-2 d-flex justify-content-end">
-        <button id="exportVolumeCSV" class="btn btn-outline-secondary btn-sm">💾 Exportar CSV</button>
-      </div>
     </div>
 
     <div class="footer">© 2025 Souza Transportes</div>
   </div>
 
-  <div id="loading" class="loading-overlay" style="display:none">
-    <div class="text-center">
-      <div class="spinner-border" role="status"><span class="visually-hidden">Loading...</span></div>
-      <div style="margin-top:8px">Carregando...</div>
-    </div>
-  </div>
+  <div id="loading" class="loading-overlay" style="display:none">Carregando... 🔄</div>
 
-  <button id="installBtn" class="btn btn-primary">📲 Instalar App Souza</button>
-  <button id="backToTop" class="btn btn-secondary">⬆️</button>
-
-  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" defer></script>
   <script>
   (function(){
-    // CONFIG
+    // ===================== CONFIG =====================
     const scriptURL = "https://script.google.com/macros/s/AKfycbyiAATQfFT3G0IK7ySMT2QNP1WJyJVI8_cxEO6jzrnd97bfrnZSn-uLpLpDLhan0dYu/exec";
-    const geocodeCacheKey = 'souza_geocode_cache_v5';
+    const geocodeCacheKey = 'souza_geocode_cache_v4';
+    const fixedMarkersStorageKey = 'souza_fixed_markers_v1';
     const fmtBRL_noCents = v => new Intl.NumberFormat('pt-BR',{style:'currency',currency:'BRL',maximumFractionDigits:0}).format(Math.round(v));
     const fmtNum1 = v => (typeof v === 'number' ? v.toLocaleString('pt-BR',{maximumFractionDigits:1}) : v);
 
-    // STATE
+    // ===================== STATE =====================
     let map = null;
+    let truckMarkers = [];
+    let fixedMarkers = [];
     let markersLayerGroup = null;
     let fixedLayerGroup = null;
     let dadosFrota = [];
-    let produtividadeRaw = [];
     let charts = [];
     let fixedMarkersVisible = true;
-    let deferredPrompt = null;
 
-    // UI refs
-    const lastUpdateEl = document.getElementById('lastUpdate');
-    const loadingEl = document.getElementById('loading');
-    const installBtn = document.getElementById('installBtn');
-    const backToTop = document.getElementById('backToTop');
-
-    // detect dark mode preference
-    if(window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches){
-      document.body.classList.add('dark-mode');
+    // ===================== HELPERS =====================
+    function toNumber(v){
+      if(v === null || v === undefined) return 0;
+      if(typeof v === 'number') return v;
+      const s = String(v).replace(/\./g,'').replace(/,/g,'.').replace(/[^\d\.\-]/g,'');
+      const n = parseFloat(s);
+      return isNaN(n) ? 0 : n;
     }
+    function clearCharts(){ charts.forEach(c=>{ try{ c.destroy(); }catch(e){} }); charts=[]; }
+    function clearTruckMarkers(){ if(markersLayerGroup) { markersLayerGroup.clearLayers(); } truckMarkers=[]; }
+    function clearFixedMarkers(){ if(fixedLayerGroup) { fixedLayerGroup.clearLayers(); } fixedMarkers=[]; }
 
-    // Persist filters
-    function saveFilters(){
-      const o = {
-        s: document.getElementById('filtroStatus').value,
-        p: document.getElementById('filtroProduto').value,
-        d: document.getElementById('filtroDestino').value
-      };
-      localStorage.setItem('souza_filters_v5', JSON.stringify(o));
-    }
-    function loadFilters(){
-      try{
-        const raw = localStorage.getItem('souza_filters_v5');
-        if(!raw) return;
-        const o = JSON.parse(raw);
-        if(o.s) document.getElementById('filtroStatus').value = o.s;
-        if(o.p) document.getElementById('filtroProduto').value = o.p;
-        if(o.d) document.getElementById('filtroDestino').value = o.d;
-      }catch(e){}
-    }
+    function loadGeocodeCache(){ try{ const raw = localStorage.getItem(geocodeCacheKey); return raw ? JSON.parse(raw) : {}; }catch(e){ return {}; } }
+    function saveGeocodeCache(c){ try{ localStorage.setItem(geocodeCacheKey, JSON.stringify(c)); }catch(e){} }
 
-    // show last update timestamp
-    function setLastUpdate(ts){
-      const d = ts ? new Date(ts) : new Date();
-      lastUpdateEl.innerText = 'Última atualização: ' + d.toLocaleTimeString('pt-BR');
-    }
-
-    function showLoading(on){ loadingEl.style.display = on ? 'flex' : 'none'; }
-
+    // safe fetch + parse JSON with timeout
     async function fetchJsonSafe(url, opts = {}, timeout = 12000){
       const controller = new AbortController();
       const id = setTimeout(()=>controller.abort(), timeout);
       try{
         const resp = await fetch(url, Object.assign({}, opts, { signal: controller.signal }));
         clearTimeout(id);
-        if(!resp.ok) throw new Error('HTTP '+resp.status);
+        if(!resp.ok) throw new Error('HTTP '+resp.status+' - '+resp.statusText);
         const txt = await resp.text();
-        try{ return JSON.parse(txt); }catch(e){ throw new Error('Resposta não é JSON'); }
+        try{ return JSON.parse(txt); }catch(e){ throw new Error('Resposta não é JSON: ' + txt.slice(0,200)); }
       }catch(err){
         clearTimeout(id);
         throw err;
       }
     }
 
+    // ===================== MAP INIT =====================
     function initMap(){
       if(map) return;
+      // center roughly between Pará e Maranhão with zoom 5
       map = L.map('map', { preferCanvas: true }).setView([-4.5, -48.5], 5);
+
+      // --- Camadas ---
+      // Google-like hybrid (satélite + labels). Atenção: uso de tiles públicos pode ter restrições de uso.
       const googleHybrid = L.tileLayer('https://mt1.google.com/vt/lyrs=y&x={x}&y={y}&z={z}', { maxZoom: 20, attribution: '&copy; Google Maps' });
+      const esriSat = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', { attribution: 'Tiles © Esri' });
+      const osm = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '&copy; OpenStreetMap contributors' });
+
+      // Add default
       googleHybrid.addTo(map);
+
+      L.control.layers({ "🛰 Satélite (Google-like)": googleHybrid, "🛰 Satélite (Esri)": esriSat, "🗺 OpenStreetMap": osm }).addTo(map);
+
+      // custom fullscreen control
+      const FullCtl = L.Control.extend({
+        onAdd: function(map){
+          const container = L.DomUtil.create('div','leaflet-control custom-fullscreen');
+          container.innerHTML = `<a title="Tela cheia" href="#" id="btnMapFull">⤢</a>`;
+          L.DomEvent.disableClickPropagation(container);
+          return container;
+        }
+      });
+      map.addControl(new FullCtl({ position: 'topleft' }));
+
+      document.addEventListener('click', function(e){
+        if(e.target && e.target.id === 'btnMapFull'){
+          e.preventDefault();
+          toggleFullscreen(document.getElementById('map'));
+        }
+      });
+
+      // layer groups for trucks and fixed markers (easier para limpar)
       markersLayerGroup = L.layerGroup().addTo(map);
       fixedLayerGroup = L.layerGroup().addTo(map);
+
+      // events
+      document.addEventListener('fullscreenchange', ()=> setTimeout(()=> map.invalidateSize(), 300));
       window.addEventListener('resize', ()=> setTimeout(()=> map.invalidateSize(), 200));
     }
 
+    function toggleFullscreen(elem){
+      if(!document.fullscreenElement){
+        elem.requestFullscreen?.().catch(()=>{ alert('Falha ao entrar em tela cheia'); });
+      } else {
+        document.exitFullscreen?.();
+      }
+    }
+
+    // ===================== GEOCODING =====================
+    async function geocodeCity(city){
+      if(!city || !String(city).trim()) return null;
+      const key = String(city).trim();
+      const cache = loadGeocodeCache();
+      if(cache[key]) return cache[key];
+      const q = `${key}, Brasil`;
+      const url = `https://nominatim.openstreetmap.org/search?format=json&limit=1&q=${encodeURIComponent(q)}`;
+      try{
+        // gentle throttle
+        await new Promise(r=>setTimeout(r, 150));
+        const resp = await fetch(url, { headers:{ 'Accept-Language':'pt-BR' } });
+        if(!resp.ok) return null;
+        const arr = await resp.json();
+        if(arr && arr[0]){
+          const lat = parseFloat(arr[0].lat), lon = parseFloat(arr[0].lon);
+          if(!isNaN(lat) && !isNaN(lon)){
+            cache[key] = { lat, lon, display_name: arr[0].display_name };
+            saveGeocodeCache(cache);
+            return cache[key];
+          }
+        }
+      }catch(e){ console.warn('geocodeCity error', e); }
+      return null;
+    }
+
+    // ===================== UTIL: extract coords from row =====================
     function extractCoordsFromRow(row){
+      // try multiple possible field names
       const latFields = ['Lat','LAT','Latitude','latitude','LATITUDE','lat'];
-      const lonFields = ['Lon','LON','Longitude','longitude','LONGITUDE','lng','Lng','LNG'];
+      const lonFields = ['Lon','LON','Lon','Longitude','longitude','LONGITUDE','lng','Lng','LNG'];
       let lat = null, lon = null;
-      for(const f of latFields){ if(row[f] !== undefined && row[f] !== null && String(row[f]).trim() !== ''){ lat = Number(String(row[f]).replace(',','.')); break; } }
-      for(const f of lonFields){ if(row[f] !== undefined && row[f] !== null && String(row[f]).trim() !== ''){ lon = Number(String(row[f]).replace(',','.')); break; } }
+      for(const f of latFields){ if(row[f] !== undefined && row[f] !== null && String(row[f]).trim() !== ''){ lat = toNumber(row[f]); break; } }
+      for(const f of lonFields){ if(row[f] !== undefined && row[f] !== null && String(row[f]).trim() !== ''){ lon = toNumber(row[f]); break; } }
       if(lat !== null && lon !== null && !isNaN(lat) && !isNaN(lon)) return { lat, lon };
       return null;
     }
 
+    function extractPlate(row){
+      const p = row.Placa || row.PLACA || row.placa || row.Frota || row.frota || row.Nome || row.NOME || '';
+      if(!p) return '';
+      const s = String(p).trim();
+      const token = s.split(/\s+/)[0];
+      return token;
+    }
+    function extractFirstName(row){
+      const m = row.MOTORISTA || row.Motorista || row.motorista || row['Motorista'] || '';
+      if(!m) return '';
+      const fn = String(m).trim().split(' ')[0];
+      return fn;
+    }
+
+    // ===================== CREATE MARKERS =====================
     function createTruckMarker(lat, lon, frotaLabel, status, popupHtml){
-      if(!map) return null;
+      if(!map || isNaN(lat) || isNaN(lon)) return null;
       const s = (status||'').toLowerCase();
       const borderColor = s.includes('carregado') ? '#2e7d32' : (s.includes('descarregando') ? '#ff9800' : '#d32f2f');
-      const html = `<div class="truck-label" style="border:2px solid ${borderColor}; background: rgba(255,255,255,0.94); padding:4px 8px; border-radius:8px;">
-        <span style="margin-right:6px">🚛</span><span style="color:${borderColor}; font-weight:700">${(frotaLabel||'Veículo')}</span></div>`;
-      const icon = L.divIcon({ html, className:'truck-div-icon', iconSize: [Math.min(320, (String(frotaLabel||'').length*8)+80),34], iconAnchor: [16,16] });
+      const textColor = borderColor;
+      const safeLabel = String(frotaLabel||'').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+      const html = `
+        <div class="truck-label" style="border:2px solid ${borderColor}; background: rgba(255,255,255,0.94);">
+          <span class="truck-emoji">🚛</span>
+          <span style="color:${textColor};">${safeLabel}</span>
+        </div>`;
+      const icon = L.divIcon({ html, className:'truck-div-icon', iconSize: [Math.min(320, (safeLabel.length*8)+80),34], iconAnchor: [16,16] });
       const m = L.marker([lat,lon], { icon });
       m.bindPopup(popupHtml);
       markersLayerGroup.addLayer(m);
+      truckMarkers.push(m);
       return m;
     }
 
-    // fixed markers (simple static list — can be replaced by server data)
-    const marcacoesFixas = [
-      { nome: "Faz. Santa Angelica", lat: -3.5874843, lon: -47.3444003, description: "Faz Santa Angelica" },
-      { nome: "Pingo de Ouro", lat: -3.8435993, lon: -47.7101285, description: "Pingo de Ouro" }
-    ];
-    function loadFixedMarkersOnMap(){
-      fixedLayerGroup.clearLayers();
-      for(const p of marcacoesFixas){
-        const mm = L.marker([p.lat,p.lon]).bindPopup(`<b>${p.nome}</b><br>${p.description}`);
-        fixedLayerGroup.addLayer(mm);
-      }
-      if(!fixedLayerGroup._map && fixedLayerGroup) fixedLayerGroup.addTo(map);
+    function createFixedMarker(lat, lon, name, opts = {}){
+      const mm = L.marker([lat, lon], { title: name, riseOnHover: true });
+      const popupHtml = `<strong>${name}</strong><br><small>${opts.description || ''}</small>`;
+      mm.bindPopup(popupHtml);
+      fixedLayerGroup.addLayer(mm);
+      fixedMarkers.push(mm);
+      return mm;
     }
 
-    // jitter to avoid overlapping icons
+    // jitter small amount for trucks that share the same base coordinates
     function jitterLatLng(lat, lon, index){
-      const r = (index * 0.0006) + (Math.random() * 0.0012);
-      return [lat + r, lon + r];
+      const magnitude = 0.006; // smaller jitter ~ few hundred meters
+      const angle = (index * 137.5) % 360;
+      const rad = angle * Math.PI / 180;
+      const r = (index * 0.0006) + (Math.random() * magnitude * 0.35);
+      return [lat + Math.sin(rad)*r, lon + Math.cos(rad)*r];
     }
 
-    // ========== BUSCAR DADOS ==========
-    async function buscarDados(showLoadingFlag = true){
+// ===================== FIXED MARKERS =====================
+const marcacoesFixas = [
+  { nome: "Faz. Santa Angelica", lat: -3.5874843, lon: -47.3444003, description: "Faz Santa Angelica", tipo: "santaangelica" },
+  { nome: "Fertilizante", lat: -2.6828867, lon: -44.2810555, description: "Mosaic", tipo: "mosaic" },
+  { nome: "Sede", lat: -3.0229692, lon: -47.1094676, description: "Maria Julia", tipo: "mariajulia" },
+  { nome: "Calcario", lat: -6.3152594, lon: -48.5650847, description: "Calmap", tipo: "calmap" },
+  { nome: "Pingo de Ouro", lat: -3.8435993, lon: -47.7101285, description: "Pingo de Ouro", tipo: "pingodeouro" },
+  { nome: "Hidrovias", lat: -1.509747, lon: -48.7204514, description: "Hidrovias", tipo: "hidrovias" },
+  { nome: "EuroChem", lat: -1.5754797, lon: -48.7708808, description: "EuroChem", tipo: "eurochem" },
+  { nome: "Gees", lat: -2.580348, lon: -44.3519742, description: "Gees", tipo: "gees" },
+  { nome: "Posto Valen", lat: -2.6145971, lon: -44.3219929, description: "Triagem", tipo: "triagem" }
+];
+
+// Mapeia cada tipo para um ícone
+const iconesPorTipo = {
+  santaangelica: "santaangelica.png",
+  mosaic: "mosaic.png",
+  mariajulia: "mariajulia.png",
+  calmap: "calmap.png",
+  default: "default.png",
+  pingodeouro: "pingodeouro.png",
+  hidrovias: "hidrovias.png",
+  eurochem: "eurochem.png",
+  gees: "gees.png",
+  triagem: "triagem.png"
+};
+
+function createFixedMarker(lat, lon, nome, options, tipo){
+  const iconUrl = iconesPorTipo[tipo] || iconesPorTipo.default;
+
+  const icon = L.icon({
+    iconUrl: iconUrl,
+    iconSize: [32, 32],
+    iconAnchor: [16, 32],
+    popupAnchor: [0, -32]
+  });
+
+  const marker = L.marker([lat, lon], { icon: icon });
+
+  if(options.description){
+    marker.bindPopup(`<b>${nome}</b><br>${options.description}`);
+  }
+
+  fixedLayerGroup.addLayer(marker);
+}
+
+function loadFixedMarkersOnMap(){
+  clearFixedMarkers();
+  for(const p of marcacoesFixas){
+    createFixedMarker(p.lat, p.lon, p.nome, { description: p.description }, p.tipo);
+  }
+  fixedLayerGroup[ fixedMarkersVisible ? 'addTo' : 'removeFrom' ]?.(map);
+}
+    // ===================== BUSCAR DADOS / STATUS =====================
+    async function buscarDados(showLoading = true){
       initMap();
-      markersLayerGroup.clearLayers();
+      clearTruckMarkers();
       document.getElementById('frotaContainer').innerHTML = "<p class='text-center text-muted'>🔄 Carregando frota...</p>";
       try{
-        if(showLoadingFlag) showLoading(true);
+        if(showLoading) showLoadingOverlay(true);
         const data = await fetchJsonSafe(`${scriptURL}?aba=status&t=${Date.now()}`);
-        if(!Array.isArray(data)) throw new Error('Formato inesperado');
+        if(!Array.isArray(data)) throw new Error('Formato de dados inesperado (esperado array).');
         dadosFrota = data;
-        setLastUpdate(Date.now());
 
-        // resumo
         const total = dadosFrota.length;
         const carreg = dadosFrota.filter(x => (x.Status||'').toLowerCase().includes('carregado')).length;
         const descar = dadosFrota.filter(x => (x.Status||'').toLowerCase().includes('descarregando')).length;
@@ -297,20 +385,17 @@
         dadosFrota.forEach(r => { if(r.Status) setStatus.add(r.Status); if(r.Produto) setProduto.add(r.Produto); if(r.Destino) setDestino.add(r.Destino); });
         const fill = (id, set) => {
           const el = document.getElementById(id);
-          const prev = el.value;
           el.innerHTML = `<option value="">Todos</option>`;
           Array.from(set).forEach(v => { if(v) el.innerHTML += `<option value="${v}">${v}</option>`; });
-          if(prev) el.value = prev;
         };
         fill('filtroStatus', setStatus); fill('filtroProduto', setProduto); fill('filtroDestino', setDestino);
-        loadFilters();
 
         // build UI cards e marcadores
         const cont = document.getElementById('frotaContainer');
         cont.innerHTML = '';
         const bounds = [];
 
-        // group by position text
+        // group trucks by 'Posição' ou cidade para geocode único
         const groups = {};
         for(const r of dadosFrota){
           const posicao = (r['Posição'] || r.Posicao || r.Local || r.Localidade || r.Cidade || r.cidade || '').trim();
@@ -319,35 +404,28 @@
           groups[key].push(r);
         }
 
+        // iterate groups: try coords from row first, else geocode once per group
         for(const [posKey, items] of Object.entries(groups)){
           const posText = (items[0]['Posição'] || items[0].Posicao || items[0].Local || items[0].Localidade || items[0].Cidade || items[0].cidade || '').trim();
-          let geoForGroup = null;
+          // Prioriza latitude/longitude — só usa cidade se estiverem vazias
+let geoForGroup = null;
+const hasCoords = items.some(r => {
+  const lat = r.Latitude || r.latitude || r.LATITUDE;
+  const lon = r.Longitude || r.longitude || r.LONGITUDE;
+  return lat && lon;
+});
+if (!hasCoords && posText) {
+  geoForGroup = await geocodeCity(posText);
+}
 
-          // prefer explicit coords
-          const hasCoords = items.some(r => {
-            const lat = r.Latitude || r.latitude || r.LATITUDE;
-            const lon = r.Longitude || r.longitude || r.LONGITUDE;
-            return lat && lon;
-          });
-
-          if(!hasCoords && posText){
-            // Geocode once for group (Nominatim)
-            try{
-              const resp = await fetch(`https://nominatim.openstreetmap.org/search?format=json&limit=1&q=${encodeURIComponent(posText + ', Brasil')}`, { headers:{ 'Accept-Language':'pt-BR' } });
-              if(resp.ok){
-                const arr = await resp.json();
-                if(arr && arr[0]) geoForGroup = { lat: parseFloat(arr[0].lat), lon: parseFloat(arr[0].lon) };
-              }
-            }catch(e){}
-          }
 
           for(let i=0;i<items.length;i++){
             const r = items[i];
             const frotaLabel = r.Frota || r.frota || r.Nome || r.Matricula || r.Placa || r.placa || '';
-            const plate = (r.Placa || r.placa || '').split(' ')[0];
-            const firstName = (r.MOTORISTA || r.Motorista || r.motorista || '').split(' ')[0] || (frotaLabel ? String(frotaLabel).split(' ')[0] : '');
+            const plate = extractPlate(r);
+            const firstName = extractFirstName(r) || (frotaLabel ? String(frotaLabel).split(' ')[0] : '');
             const status = r.Status || '';
-            const produto = r.Produto || '-';
+            const produto = r.Produto || r.PRODUTO || r.PRODUTO || '-';
             const posicao = r['Posição'] || r.Posicao || r.Local || r.Cidade || r.cidade || '';
             const destino = r.Destino || '-';
 
@@ -359,16 +437,18 @@
               <p class="mb-0"><strong>Produto:</strong> ${produto}</p>
               <p class="mb-0"><strong>Posição:</strong> ${posicao || '-'}</p>
               <p class="mb-0"><strong>Destino:</strong> ${destino}</p>
-              <div class="mt-2"><button class="btn btn-sm btn-outline-success btn-map" data-idx="${i}">📍 Mapa</button></div>
+              <div class="mt-2"><button class="btn btn-sm btn-outline-success btn-map" data-idx="${i}" data-pos="${encodeURIComponent(posicao)}" data-frota="${encodeURIComponent(frotaLabel)}">📍 Mapa</button></div>
             </div>`;
             cont.appendChild(card);
 
+            // try to get coordinates: priority -> explicit lat/lon in row -> group geocode -> null
             let coords = extractCoordsFromRow(r);
             if(!coords && geoForGroup) coords = { lat: geoForGroup.lat, lon: geoForGroup.lon };
 
             if(coords){
               const [lat, lon] = jitterLatLng(coords.lat, coords.lon, i);
-              const popupHtml = `<strong>${frotaLabel}</strong><br><small><b>Placa:</b> ${plate || '-'}<br><b>Motorista:</b> ${firstName || '-'}<br><b>Status:</b> ${status || '-'}<br><b>Produto:</b> ${produto || '-'}<br><b>Destino:</b> ${destino || '-'}<br><b>Posição:</b> ${posicao || '-'}</small>`;
+              const popupHtml = `<strong>${frotaLabel}</strong><br><small><b>Placa:</b> ${plate || '-'}<br><b>Motorista:</b> ${firstName || '-'}<br><b>Status:</b> ${status || '-'}<br><b>Produto:</b> ${produto || '-'}<br><b>Destino:</b> ${destino || '-'}<br><b>Posição:</b> ${posicao || '-'}</small>
+                <div style="margin-top:6px"><a href="https://earth.google.com/web/@${lat},${lon},1000a,35y,0h,0t,0r" target="_blank" rel="noopener">🔭 Ver no Google Earth (3D)</a></div>`;
               const m = createTruckMarker(lat, lon, frotaLabel, status, popupHtml);
               if(m) bounds.push([lat, lon]);
               const btn = card.querySelector('.btn-map');
@@ -380,22 +460,26 @@
           }
         }
 
+        // ajustar bounds
         if(bounds.length) try{ map.fitBounds(bounds, { padding:[80,80] }); }catch(e){}
+
+        // ensure fixed markers are (re)loaded
         loadFixedMarkersOnMap();
-        saveFilters();
+        if(!fixedMarkersVisible) map.removeLayer(fixedLayerGroup);
+
       }catch(err){
         console.error('Erro buscarDados', err);
-        document.getElementById('frotaContainer').innerHTML = "<p class='text-danger text-center'>Erro ao carregar frota.</p>";
+        document.getElementById('frotaContainer').innerHTML = "<p class='text-danger text-center'>Erro ao carregar frota. Veja o console para detalhes.</p>";
+        alert('Falha ao carregar dados de status. Verifique o endpoint do Google Script.');
       } finally {
-        showLoading(false);
+        showLoadingOverlay(false);
       }
     }
 
-    // Filters events
-    document.getElementById('filtroStatus').addEventListener('change', ()=>{ saveFilters(); aplicarFiltros(); });
-    document.getElementById('filtroProduto').addEventListener('change', ()=>{ saveFilters(); aplicarFiltros(); });
-    document.getElementById('filtroDestino').addEventListener('change', ()=>{ saveFilters(); aplicarFiltros(); });
-    document.getElementById('clearFilters').addEventListener('click', ()=>{ localStorage.removeItem('souza_filters_v5'); document.getElementById('filtroStatus').value=''; document.getElementById('filtroProduto').value=''; document.getElementById('filtroDestino').value=''; aplicarFiltros(); });
+    // ===================== FILTROS =====================
+    document.getElementById('filtroStatus').addEventListener('change', aplicarFiltros);
+    document.getElementById('filtroProduto').addEventListener('change', aplicarFiltros);
+    document.getElementById('filtroDestino').addEventListener('change', aplicarFiltros);
 
     async function aplicarFiltros(){
       const fStatus = document.getElementById('filtroStatus').value.toLowerCase();
@@ -406,200 +490,240 @@
         (!fProduto || (v.Produto||'').toLowerCase().includes(fProduto)) &&
         (!fDestino || (v.Destino||'').toLowerCase().includes(fDestino))
       );
-      // reuse UI creation but simplified: clear markers and cards and show filtered
-      markersLayerGroup.clearLayers();
+
+      clearTruckMarkers();
       const cont = document.getElementById('frotaContainer');
       cont.innerHTML = '';
       const bounds=[];
+      const groups = {};
       for(const r of filtrados){
-        const frotaLabel = r.Frota || r.placa || '';
-        const posicao = r['Posição'] || r.Local || r.Cidade || '';
-        const coords = extractCoordsFromRow(r);
-        const card = document.createElement('div');
-        card.className = 'col-6 col-md-3';
-        card.innerHTML = `<div class="card p-2"><h6>${frotaLabel}</h6><p class="small text-muted mb-1">${r.Status||''}</p><p class="mb-0"><strong>Produto:</strong> ${r.Produto||'-'}</p><p class="mb-0"><strong>Posição:</strong> ${posicao || '-'}</p></div>`;
-        cont.appendChild(card);
-        if(coords){
-          const [lat, lon] = jitterLatLng(coords.lat, coords.lon, 0);
-          const m = createTruckMarker(lat, lon, frotaLabel, r.Status||'', `<b>${frotaLabel}</b>`);
-          if(m) bounds.push([lat, lon]);
+        const posicao = (r['Posição'] || r.Posicao || r.Local || r.Localidade || r.Cidade || r.cidade || '').trim();
+        const key = posicao || `__row_${Math.random().toString(36).slice(2,8)}`;
+        if(!groups[key]) groups[key] = [];
+        groups[key].push(r);
+      }
+
+      for(const [posKey, items] of Object.entries(groups)){
+        const posText = (items[0]['Posição'] || items[0].Posicao || items[0].Local || items[0].Localidade || items[0].Cidade || items[0].cidade || '').trim();
+        let geo = null;
+        if(posText) geo = await geocodeCity(posText);
+
+        for(let i=0;i<items.length;i++){
+          const r = items[i];
+          const frotaLabel = r.Frota || r.frota || r.Nome || r.Matricula || r.Placa || r.placa || '';
+          const plate = extractPlate(r);
+          const firstName = extractFirstName(r) || (frotaLabel ? String(frotaLabel).split(' ')[0] : '');
+          const status = r.Status || '';
+          const produto = r.Produto || r.PRODUTO || r.PRODUTO || '-';
+          const posicao = r['Posição'] || r.Posicao || r.Local || r.Cidade || r.cidade || '';
+          const destino = r.Destino || '-';
+
+          const card = document.createElement('div');
+          card.className = 'col-6 col-md-3';
+          card.innerHTML = `<div class="card p-2">
+            <h6>${frotaLabel ? frotaLabel : (plate ? plate + ' - ' + firstName : 'Veículo')}</h6>
+            <p class="small text-muted mb-1">${status}</p>
+            <p class="mb-0"><strong>Produto:</strong> ${produto}</p>
+            <p class="mb-0"><strong>Posição:</strong> ${posicao || '-'}</p>
+            <p class="mb-0"><strong>Destino:</strong> ${destino}</p>
+            <div class="mt-2"><button class="btn btn-sm btn-outline-success btn-map" data-idx="${i}" data-pos="${encodeURIComponent(posicao)}" data-frota="${encodeURIComponent(frotaLabel)}">📍 Mapa</button></div>
+          </div>`;
+          cont.appendChild(card);
+
+          let coords = extractCoordsFromRow(r);
+          if(!coords && geo) coords = { lat: geo.lat, lon: geo.lon };
+
+          if(coords){
+            const [lat, lon] = jitterLatLng(coords.lat, coords.lon, i);
+            const popupHtml = `<strong>${frotaLabel}</strong><br><small><b>Placa:</b> ${plate || '-'}<br><b>Motorista:</b> ${firstName || '-'}<br><b>Status:</b> ${status || '-'}<br><b>Produto:</b> ${produto || '-'}<br><b>Destino:</b> ${destino || '-'}<br><b>Posição:</b> ${posicao || '-'}</small>
+                <div style="margin-top:6px"><a href="https://earth.google.com/web/@${lat},${lon},1000a,35y,0h,0t,0r" target="_blank" rel="noopener">🔭 Ver no Google Earth (3D)</a></div>`;
+            const m = createTruckMarker(lat, lon, frotaLabel, status, popupHtml);
+            if(m) bounds.push([lat, lon]);
+            const btn = card.querySelector('.btn-map');
+            if(btn) btn.addEventListener('click', ()=>{ map.setView([lat, lon], 12); try{ m.openPopup(); }catch(e){} });
+          } else {
+            const btn = card.querySelector('.btn-map');
+            if(btn) btn.addEventListener('click', ()=> alert('Localização não encontrada para: ' + posicao));
+          }
         }
       }
+
       if(bounds.length) try{ map.fitBounds(bounds, { padding:[80,80] }); }catch(e){}
     }
 
-    // ========== PRODUTIVIDADE (lazy load Chart.js) ==========
-    async function loadChartLibraries(){
-      if(window.Chart && window.ChartDataLabels) return;
-      await new Promise((res, rej) => {
-        const s1 = document.createElement('script'); s1.src = 'https://cdn.jsdelivr.net/npm/chart.js'; s1.onload = res; s1.onerror = rej; document.head.appendChild(s1);
-        const s2 = document.createElement('script'); s2.src = 'https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2'; s2.onload = ()=>{}; s2.onerror = ()=>{}; document.head.appendChild(s2);
-      });
-    }
-
+    // ===================== PRODUTIVIDADE =====================
     async function loadProdutividade(){
-      showLoading(true);
+      clearCharts();
+      document.getElementById('kpiFaturamento').innerText = 'Carregando...';
       try{
-        await loadChartLibraries();
+        showLoadingOverlay(true);
         const data = await fetchJsonSafe(`${scriptURL}?aba=produtividade&t=${Date.now()}`);
-        if(!Array.isArray(data)) throw new Error('Formato inesperado');
-        produtividadeRaw = data;
-        // aggregate
-        const byPeso = {}, byCom = {};
+        if(!Array.isArray(data)) throw new Error('Formato de dados inesperado (esperado array).');
+
+        const byCom = {}, byPeso = {};
         let totalFat=0, totalCom=0, totalPeso=0, totalViagens=0;
+
         data.forEach(r=>{
           const motoristaFull = r.MOTORISTA || r.Motorista || r.motorista || '—';
           const firstName = String(motoristaFull).split(' ')[0] || motoristaFull;
-          const peso = Number((r['PESO CARREGADO (TON)']||r.PESO||0).toString().replace(',','.')) || 0;
-          const fat = Number((r['FATURAMENTO FRETE']||r.FATURAMENTO||0).toString().replace(',','.')) || 0;
-          const com = Number((r['COMISSÃO (12%)']||r['COMISSÃO']||0).toString().replace(',','.')) || 0;
+          const peso = toNumber(r['PESO CARREGADO (TON)'] || r['PESO CARREGADO'] || r.PESO || 0);
+          const viagem = toNumber(r['VIAGEM'] || r.VIAGEM || 0);
+          const fat = toNumber(r['FATURAMENTO FRETE'] || r['FATURAMENTO'] || r.FATURAMENTO || 0);
+          const com = toNumber(r['COMISSÃO (12%)'] || r['COMISSÃO'] || r.COMISSAO || 0);
+
           byPeso[firstName] = (byPeso[firstName]||0) + peso;
           byCom[firstName] = (byCom[firstName]||0) + com;
-          totalPeso += peso; totalViagens += Number(r['VIAGEM']||0); totalFat += fat; totalCom += com;
+
+          totalPeso += peso; totalViagens += viagem; totalFat += fat; totalCom += com;
         });
+
         document.getElementById('kpiFaturamento').innerText = fmtBRL_noCents(totalFat);
         document.getElementById('kpiComissao').innerText = fmtBRL_noCents(totalCom);
         document.getElementById('kpiPesoTotal').innerText = totalPeso.toFixed(1);
         document.getElementById('kpiViagensTotal').innerText = totalViagens;
 
-        // Top5 by peso
-        const topPairs = Object.entries(byPeso).sort((a,b)=>b[1]-a[1]).slice(0,5);
-        const topLabels = topPairs.map(p=>p[0]), topData = topPairs.map(p=>p[1]);
-        const ctxTop = document.getElementById('chartTop5').getContext('2d');
-        try{ charts.forEach(c=>c.destroy()); }catch(e){}
-        charts = [];
-        charts.push(new Chart(ctxTop, {
-          type:'bar', data:{ labels: topLabels, datasets:[{ label:'Peso (ton)', data: topData }] },
-          options:{ indexAxis:'y', responsive:true, maintainAspectRatio:false, plugins:{ legend:{ display:false }, datalabels:{ anchor:'end', align:'right', formatter: v => v.toLocaleString('pt-BR',{maximumFractionDigits:1}) } }, scales:{ x:{ beginAtZero:true } } },
+        // prepare Peso chart: ORDER from smallest -> largest
+        const pesoPairsAsc = Object.entries(byPeso).sort((a,b)=>a[1]-b[1]).slice(0,12);
+        const pesoLabels = pesoPairsAsc.map(p=>p[0]);
+        const pesoData = pesoPairsAsc.map(p=>p[1]);
+        const ctxP = document.getElementById('chartPesoMotorista').getContext('2d');
+
+        // colors: gradient from light to dark green by rank
+        const pesoColors = generateGradientColors(pesoData.length, '#c8e6c9', '#2e7d32');
+
+        charts.push(new Chart(ctxP, {
+          type:'bar',
+          data:{ labels:pesoLabels, datasets:[{ label:'Peso (ton)', data:pesoData, backgroundColor: pesoColors }] },
+          options:{
+            indexAxis:'y', responsive:true, maintainAspectRatio:false,
+            plugins:{ legend:{ display:false }, datalabels:{ anchor:'end', align:'right', formatter: v => v.toLocaleString('pt-BR',{maximumFractionDigits:1}) } },
+            scales:{ x:{ beginAtZero:true } }
+          },
           plugins:[ChartDataLabels]
         }));
 
-        // Comissão chart
-        const comPairs = Object.entries(byCom).sort((a,b)=>b[1]-a[1]).slice(0,12);
-        const comLabels = comPairs.map(p=>p[0]), comData = comPairs.map(p=>p[1]);
+        // Comissão chart: ORDER from smallest -> largest
+        const comPairsAsc = Object.entries(byCom).sort((a,b)=>a[1]-b[1]).slice(0,12);
+        const comLabels = comPairsAsc.map(p=>p[0]);
+        const comData = comPairsAsc.map(p=>p[1]);
         const ctxC = document.getElementById('chartComissaoMotorista').getContext('2d');
-        charts.push(new Chart(ctxC, {
-          type:'bar', data:{ labels: comLabels, datasets:[{ label:'Comissão (R$)', data: comData }] },
-          options:{ indexAxis:'y', responsive:true, maintainAspectRatio:false, plugins:{ legend:{ display:false }, datalabels:{ anchor:'end', align:'right', formatter:v=>fmtBRL_noCents(v) } }, scales:{ x:{ beginAtZero:true } } },
-          plugins:[ChartDataLabels]
-        }));
 
-        // Historic (simple time series from provided data if has date field)
-        const dates = {}, seriesPeso = {};
-        data.forEach(r=>{
-          const date = (r.DATA || r.Data || r.data || '').slice(0,10) || 'Hoje';
-          const peso = Number((r['PESO CARREGADO (TON)']||r.PESO||0).toString().replace(',','.')) || 0;
-          dates[date] = true;
-          seriesPeso[date] = (seriesPeso[date]||0) + peso;
-        });
-        const sortedDates = Object.keys(dates).sort();
-        const histLabels = sortedDates;
-        const histData = sortedDates.map(d=>seriesPeso[d]||0);
-        const ctxH = document.getElementById('chartHistoric').getContext('2d');
-        charts.push(new Chart(ctxH, {
-          type:'line', data:{ labels: histLabels, datasets:[{ label:'Peso (ton)', data: histData, fill:true }] },
-          options:{ responsive:true, maintainAspectRatio:false, plugins:{ legend:{ display:false }, datalabels:{ display:false } }, scales:{ y:{ beginAtZero:true } } }
+        const comColors = generateGradientColors(comData.length, '#ffecb3', '#ff6f00'); // light -> dark orange
+
+        charts.push(new Chart(ctxC, {
+          type:'bar',
+          data:{ labels:comLabels, datasets:[{ label:'Comissão (R$)', data:comData, backgroundColor: comColors }] },
+          options:{
+            indexAxis:'y', responsive:true, maintainAspectRatio:false,
+            plugins:{ legend:{ display:false }, datalabels:{ anchor:'end', align:'right', formatter:v=>fmtBRL_noCents(v) } },
+            scales:{ x:{ beginAtZero:true } }
+          },
+          plugins:[ChartDataLabels]
         }));
 
       }catch(e){
         console.error('Erro produtividade', e);
-        alert('Erro ao carregar produtividade.');
+        document.getElementById('kpiFaturamento').innerText='Erro';
+        document.getElementById('kpiComissao').innerText='Erro';
+        alert('Falha ao carregar dados de produtividade. Verifique a conexão ou o endpoint do Google Script.');
       } finally {
-        showLoading(false);
+        showLoadingOverlay(false);
       }
     }
 
-    // ========== VOLUME ==========
+    // gradient color generator (returns array of CSS color strings)
+    function generateGradientColors(n, startHex, endHex){
+      // simple linear interpolation in RGB
+      function hexToRgb(hex){ hex = hex.replace('#',''); return { r: parseInt(hex.substring(0,2),16), g: parseInt(hex.substring(2,4),16), b: parseInt(hex.substring(4,6),16) }; }
+      function rgbToHex(r,g,b){ return '#' + [r,g,b].map(v=>v.toString(16).padStart(2,'0')).join(''); }
+      const s = hexToRgb(startHex), e = hexToRgb(endHex);
+      const arr = [];
+      if(n <= 1) return [endHex];
+      for(let i=0;i<n;i++){
+        const t = i / Math.max(1, n-1);
+        const r = Math.round(s.r + (e.r - s.r) * t);
+        const g = Math.round(s.g + (e.g - s.g) * t);
+        const b = Math.round(s.b + (e.b - s.b) * t);
+        arr.push(rgbToHex(r,g,b));
+      }
+      return arr;
+    }
+
+    // ===================== VOLUME =====================
     async function loadVolume(){
-      showLoading(true);
+      clearCharts();
+      document.getElementById('kpiVolumeTotal').innerText = '--';
+      const container = document.getElementById('volumeByFazenda');
+      container.innerHTML = "<p class='text-center text-muted'>🔄 Carregando volume...</p>";
+
       try{
+        showLoadingOverlay(true);
         const data = await fetchJsonSafe(`${scriptURL}?aba=volume&t=${Date.now()}`);
-        if(!Array.isArray(data)) throw new Error('Formato inesperado');
-        // aggregate by fazenda
-        const byFaz = {}; let totalEnt = 0;
+        if(!Array.isArray(data)) throw new Error('Formato de dados inesperado (esperado array).');
+
+        const byFaz = {};
+        let totalEnt = 0;
         data.forEach(r=>{
           const faz = (r.FAZENDA || r.Fazenda || r.fazenda || '').trim();
-          const prod = (r.PRODUTO || r.Produto || '').trim();
-          const vol = Number((r['VOLUME ENTREGUE (TON)']||r.VOLUME||0).toString().replace(',','.')) || 0;
+          const prod = (r.PRODUTO || r.Produto || r.produto || '').trim();
+          const pedido = r.Pedido || r.PEDIDO || r.pedido || '';
+          const vol = toNumber(r['VOLUME ENTEGUE (TON)'] || r['VOLUME ENTREGUE (TON)'] || r.VOLUME || 0);
+          const saldo = toNumber(r.Saldo || r.SALDO || r.saldo || 0);
           if(!faz || !prod) return;
-          byFaz[faz] = byFaz[faz] || {};
-          byFaz[faz][prod] = byFaz[faz][prod] || { entregue:0, saldo:0 };
+          if(!byFaz[faz]) byFaz[faz] = {};
+          if(!byFaz[faz][prod]) byFaz[faz][prod] = { pedido: null, entregue:0, saldo:0 };
+          if(pedido !== '' && pedido !== null) byFaz[faz][prod].pedido = pedido;
           byFaz[faz][prod].entregue += vol;
+          byFaz[faz][prod].saldo += saldo;
           totalEnt += vol;
         });
+
         document.getElementById('kpiVolumeTotal').innerText = totalEnt.toLocaleString('pt-BR',{maximumFractionDigits:1}) + " ton";
+
         const fazendas = Object.keys(byFaz).sort();
+        if(fazendas.length === 0){
+          container.innerHTML = "<p class='text-muted'>Nenhum registro de volume encontrado.</p>";
+          return;
+        }
+
         let html = '';
         for(const faz of fazendas){
-          html += `<div class="card mb-2 p-2"><strong>🌾 ${faz}</strong><div class="mt-2">`;
+          html += `<div class="card mb-2 p-2"><strong>🌾 ${faz}</strong>`;
           const products = Object.entries(byFaz[faz]).sort((a,b)=>b[1].entregue - a[1].entregue);
+          html += `<div class="mt-2">`;
           products.forEach(([prod, info])=>{
+            const pedidoTxt = info.pedido !== null && info.pedido !== '' ? String(info.pedido) : '-';
             html += `<div style="padding:8px 0;border-bottom:1px dashed #eee">
               <div style="font-weight:600">${prod}</div>
-              <div style="font-size:0.95rem;color:#444">Entregue: <b>${info.entregue.toLocaleString('pt-BR',{maximumFractionDigits:1})} ton</b></div>
+              <div style="font-size:0.95rem;color:#444">Pedido: <b>${pedidoTxt}</b> | Entregue: <b>${info.entregue.toLocaleString('pt-BR',{maximumFractionDigits:1})} ton</b> | Saldo: <b>${info.saldo.toLocaleString('pt-BR',{maximumFractionDigits:1})} ton</b></div>
             </div>`;
           });
           html += `</div></div>`;
         }
-        document.getElementById('volumeByFazenda').innerHTML = html;
-      }catch(e){
-        console.error('Erro loadVolume', e);
-        alert('Erro ao carregar volume.');
+        container.innerHTML = html;
+
+      }catch(err){
+        console.error('Erro loadVolume', err);
+        container.innerHTML = "<p class='text-danger'>Erro ao carregar volume. Veja o console para mais detalhes.</p>";
+        alert('Falha ao carregar dados de volume. Verifique a conexão ou o endpoint do Google Script.');
       } finally {
-        showLoading(false);
+        showLoadingOverlay(false);
       }
     }
 
-    // ========== EXPORT CSV ==========
-    function objectArrayToCSV(arr){
-      if(!arr || !arr.length) return '';
-      const keys = Object.keys(arr[0]);
-      const lines = [keys.join(',')];
-      arr.forEach(r=>{
-        const vals = keys.map(k=>{
-          const v = r[k] === null || r[k] === undefined ? '' : String(r[k]).replace(/"/g,'""');
-          if(v.includes(',') || v.includes('\n')) return `"${v}"`; else return v;
-        });
-        lines.push(vals.join(','));
-      });
-      return lines.join('\n');
-    }
-    document.getElementById('exportStatusCSV').addEventListener('click', ()=>{
-      const csv = objectArrayToCSV(dadosFrota || []);
-      if(!csv) return alert('Sem dados para exportar.');
-      const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a'); a.href = url; a.download = 'souza_status.csv'; a.click(); URL.revokeObjectURL(url);
-    });
-    document.getElementById('exportProdCSV').addEventListener('click', ()=>{
-      const csv = objectArrayToCSV(produtividadeRaw || []);
-      if(!csv) return alert('Sem dados para exportar.');
-      const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a'); a.href = url; a.download = 'souza_produtividade.csv'; a.click(); URL.revokeObjectURL(url);
-    });
-    document.getElementById('exportVolumeCSV').addEventListener('click', async ()=>{
-      try{
-        const data = await fetchJsonSafe(`${scriptURL}?aba=volume&t=${Date.now()}`);
-        const csv = objectArrayToCSV(data || []);
-        const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a'); a.href = url; a.download = 'souza_volume.csv'; a.click(); URL.revokeObjectURL(url);
-      }catch(e){ alert('Erro ao exportar volume.'); }
-    });
-
-    // ========== UI / EVENTS ==========
+    // ===================== UI / EVENTS =====================
     const btnStatus = document.getElementById('btnStatus');
     const btnProd = document.getElementById('btnProd');
     const btnVolume = document.getElementById('btnVolume');
     const refreshBtnTop = document.getElementById('refreshBtnTop');
     const darkModeTop = document.getElementById('darkModeTop');
+    const appLegend = document.getElementById('appLegend');
     const toggleFixedBtn = document.getElementById('toggleFixedMarkers');
 
     function setLegend(key){
-      if(key==='status') document.getElementById('appLegend').innerText = "🚛 Status da Frota — Região: Pará & Maranhão";
-      if(key==='prod') document.getElementById('appLegend').innerText = "📈 Painel de Produtividade";
-      if(key==='volume') document.getElementById('appLegend').innerText = "📊 Relatório de Volume Entregue";
+      if(key==='status') appLegend.innerText = "🚛 Status da Frota — Região: Pará & Maranhão";
+      if(key==='prod') appLegend.innerText = "📈 Painel de Produtividade";
+      if(key==='volume') appLegend.innerText = "📊 Relatório de Volume Entregue";
     }
     function activateTab(btn, sectionId, key){
       document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('active'));
@@ -614,42 +738,32 @@
     btnVolume.addEventListener('click', ()=>{ activateTab(btnVolume,'sectionVolume','volume'); loadVolume(); });
     refreshBtnTop.addEventListener('click', ()=>{ if(document.getElementById('sectionStatus').classList.contains('active')) buscarDados(false); else if(document.getElementById('sectionProd').classList.contains('active')) loadProdutividade(); else loadVolume(); });
     darkModeTop.addEventListener('click', ()=> document.body.classList.toggle('dark-mode'));
-    toggleFixedBtn.addEventListener('click', ()=> { fixedLayerGroup[ fixedLayerGroup._map ? 'removeFrom' : 'addTo' ](map); toggleFixedBtn.classList.toggle('active'); });
+    toggleFixedBtn.addEventListener('click', ()=> { toggleFixedMarkers(); toggleFixedBtn.classList.toggle('active'); });
 
-    // back to top
-    window.addEventListener('scroll', ()=> {
-      backToTop.style.display = window.scrollY > 300 ? 'block' : 'none';
-    });
-    backToTop.addEventListener('click', ()=> window.scrollTo({ top:0, behavior:'smooth' }));
+    const urlParams = new URLSearchParams(window.location.search);
+    const initial = (urlParams.get('aba') || 'status').toLowerCase();
 
-    // beforeinstallprompt handling
-    window.addEventListener('beforeinstallprompt', (e) => {
-      e.preventDefault();
-      deferredPrompt = e;
-      installBtn.style.display = 'block';
-    });
-    installBtn.addEventListener('click', async ()=>{
-      if(!deferredPrompt) return;
-      deferredPrompt.prompt();
-      const choice = await deferredPrompt.userChoice;
-      if(choice.outcome === 'accepted') installBtn.style.display = 'none';
-      deferredPrompt = null;
-    });
-
-    // register service worker
-    if('serviceWorker' in navigator){
-      navigator.serviceWorker.register('./service-worker.js').then(()=>console.log('SW registrado')).catch(()=>console.warn('SW registra falhou'));
+    function showLoadingOverlay(on){
+      const el = document.getElementById('loading');
+      el.style.display = on ? 'flex' : 'none';
     }
 
-    // initial load
-    window.addEventListener('load', ()=> {
+    window.addEventListener('load', ()=>{ 
       initMap();
-      loadFilters();
-      activateTab(btnStatus,'sectionStatus','status');
-      buscarDados();
-      // update every 3 minutes in background
-      setInterval(()=>{ if(document.getElementById('sectionStatus').classList.contains('active')) buscarDados(false); }, 3*60*1000);
+      // initial content load
+      if(initial === 'produtividade' || initial === 'prod') { activateTab(btnProd,'sectionProd','prod'); loadProdutividade(); }
+      else if(initial === 'volume') { activateTab(btnVolume,'sectionVolume','volume'); loadVolume(); }
+      else { activateTab(btnStatus,'sectionStatus','status'); buscarDados(); }
+
+      // register service worker if present
+      if('serviceWorker' in navigator){
+        navigator.serviceWorker.register('./service-worker.js').then(()=>console.log('SW registrado')).catch(()=>console.warn('SW registra falhou'));
+      }
     });
+
+    // expose small utils for debugging
+    window.souza_clearGeocodeCache = function(){ try{ localStorage.removeItem(geocodeCacheKey); alert('Cache limpo'); }catch(e){ alert('Erro ao limpar cache'); } };
+    window.souza_toggleFixedMarkers = toggleFixedMarkers;
 
   })();
   </script>
