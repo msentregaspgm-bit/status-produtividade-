@@ -53,11 +53,10 @@
       <img src="logo.png" alt="Logo Souza" class="logo-left">
       <div class="title-wrap">
         <h1>Souza Transportes</h1>
-        <div id="appLegend" class="app-legend">🚛 Status da Frota — Região: Pará & Maranhão</div>
+        <div id="appLegend" class="app-legend">🚛 Status da Frota</div>
       </div>
       <div style="text-align:right">
         <button id="refreshBtnTop" class="btn btn-success btn-icon" title="Atualizar">🔄</button>
-        <button id="darkModeTop" class="btn btn-outline-dark btn-icon" title="Modo Escuro">🌙</button>
       </div>
     </header>
 
@@ -68,8 +67,8 @@
       <button id="btnPneus" class="btn btn-outline-dark nav-btn" title="Pneus" onclick="window.open('https://pneus-souza.vercel.app/', '_blank')">
         <img src="logoPneu.png" alt="Pneu" width="24" height="24">
       </button>
-      <button id="toggleFixedMarkers" class="btn btn-outline-info nav-btn" title="Mostrar/Ocultar pontos fixos">📌</button>
-    </div>
+       <button id="Excel" class="btn btn-outline-success btn-sm mb-2">💾 Excel</button>
+  </div>
 
     <!-- STATUS -->
     <div id="sectionStatus" class="section active">
@@ -721,7 +720,7 @@ if (!hasCoords && posText) {
     const toggleFixedBtn = document.getElementById('toggleFixedMarkers');
 
     function setLegend(key){
-      if(key==='status') appLegend.innerText = "🚛 Status da Frota — Região: Pará & Maranhão";
+      if(key==='status') appLegend.innerText = "🚛 Status da Frota";
       if(key==='prod') appLegend.innerText = "📈 Painel de Produtividade";
       if(key==='volume') appLegend.innerText = "📊 Relatório de Volume Entregue";
     }
@@ -766,6 +765,22 @@ if (!hasCoords && posText) {
     window.souza_toggleFixedMarkers = toggleFixedMarkers;
 
   })();
+    // 💾 Exporta dados visíveis para CSV
+document.getElementById("exportCSV").addEventListener("click", () => {
+  const tabela = document.querySelector("table");
+  if (!tabela) return;
+  let csv = [];
+  tabela.querySelectorAll("tr").forEach(tr => {
+    let linha = [];
+    tr.querySelectorAll("th,td").forEach(td => linha.push(td.innerText));
+    csv.push(linha.join(","));
+  });
+  const blob = new Blob([csv.join("\n")], { type: "text/csv;charset=utf-8;" });
+  const link = document.createElement("a");
+  link.href = URL.createObjectURL(blob);
+  link.download = "dados_souza.csv";
+  link.click();
+});
   </script>
 </body>
 </html>
