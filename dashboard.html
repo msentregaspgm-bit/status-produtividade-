@@ -57,6 +57,7 @@
       </div>
       <div style="text-align:right">
         <button id="refreshBtnTop" class="btn btn-success btn-icon" title="Atualizar">🔄</button>
+        <button id="darkModeTop" class="btn btn-outline-dark btn-icon" title="Modo Escuro">🌙</button>
       </div>
     </header>
 
@@ -67,7 +68,7 @@
       <button id="btnPneus" class="btn btn-outline-dark nav-btn" title="Pneus" onclick="window.open('https://pneus-souza.vercel.app/', '_blank')">
         <img src="logoPneu.png" alt="Pneu" width="24" height="24">
       </button>
-      <button id="exportCSV" class="btn btn-outline-success btn-sm mb-2">💾 Excel</button>
+      <button id="toggleFixedMarkers" class="btn btn-outline-info nav-btn" title="Mostrar/Ocultar pontos fixos">📌</button>
     </div>
 
     <!-- STATUS -->
@@ -647,16 +648,6 @@ if (!hasCoords && posText) {
       }
       return arr;
     }
-<div class="mt-4">
-  <h5>🏆 Top 5 Motoristas (Peso)</h5>
-  <canvas id="chartTop5"></canvas>
-</div>
-
-<div class="mt-4">
-  <h5>📅 Histórico de Produtividade</h5>
-  <canvas id="chartHistorico"></canvas>
-</div>
-
 
     // ===================== VOLUME =====================
     async function loadVolume(){
@@ -730,7 +721,7 @@ if (!hasCoords && posText) {
     const toggleFixedBtn = document.getElementById('toggleFixedMarkers');
 
     function setLegend(key){
-      if(key==='status') appLegend.innerText = "🚛 Status da Frota";
+      if(key==='status') appLegend.innerText = "🚛 Status da Frota — Região: Pará & Maranhão";
       if(key==='prod') appLegend.innerText = "📈 Painel de Produtividade";
       if(key==='volume') appLegend.innerText = "📊 Relatório de Volume Entregue";
     }
@@ -775,44 +766,6 @@ if (!hasCoords && posText) {
     window.souza_toggleFixedMarkers = toggleFixedMarkers;
 
   })();
-// 💾 Exporta dados visíveis para CSV
-document.getElementById("exportCSV").addEventListener("click", () => {
-  const tabela = document.querySelector("table");
-  if (!tabela) return;
-  let csv = [];
-  tabela.querySelectorAll("tr").forEach(tr => {
-    let linha = [];
-    tr.querySelectorAll("th,td").forEach(td => linha.push(td.innerText));
-    csv.push(linha.join(","));
-  });
-  const blob = new Blob([csv.join("\n")], { type: "text/csv;charset=utf-8;" });
-  const link = document.createElement("a");
-  link.href = URL.createObjectURL(blob);
-  link.download = "dados_souza.csv";
-  link.click();
-});
-// Após carregar Chart.js
-await carregarChartLibs();
-
-const ctxTop5 = document.getElementById("chartTop5");
-new Chart(ctxTop5, {
-  type: "bar",
-  data: {
-    labels: ["João", "Carlos", "Marcos", "Pedro", "Luis"],
-    datasets: [{ label: "Peso (kg)", data: [8000, 7500, 7000, 6500, 6200], backgroundColor: "#2e7d32" }]
-  },
-  options: { plugins: { legend: { display: false } } }
-});
-
-const ctxHist = document.getElementById("chartHistorico");
-new Chart(ctxHist, {
-  type: "line",
-  data: {
-    labels: ["Seg", "Ter", "Qua", "Qui", "Sex"],
-    datasets: [{ label: "Peso Total (t)", data: [120, 150, 90, 170, 200], borderColor: "#2e7d32", tension: 0.3 }]
-  }
-});
-
   </script>
 </body>
 </html>
