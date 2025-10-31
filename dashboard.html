@@ -53,10 +53,11 @@
       <img src="logo.png" alt="Logo Souza" class="logo-left">
       <div class="title-wrap">
         <h1>Souza Transportes</h1>
-        <div id="appLegend" class="app-legend">🚛 Status da Frota</div>
+        <div id="appLegend" class="app-legend">🚛 Status da Frota — Região: Pará & Maranhão</div>
       </div>
       <div style="text-align:right">
         <button id="refreshBtnTop" class="btn btn-success btn-icon" title="Atualizar">🔄</button>
+        <button id="darkModeTop" class="btn btn-outline-dark btn-icon" title="Modo Escuro">🌙</button>
       </div>
     </header>
 
@@ -67,8 +68,8 @@
       <button id="btnPneus" class="btn btn-outline-dark nav-btn" title="Pneus" onclick="window.open('https://pneus-souza.vercel.app/', '_blank')">
         <img src="logoPneu.png" alt="Pneu" width="24" height="24">
       </button>
-       <button id="Excel" class="btn btn-outline-success btn-sm mb-2">💾 Excel</button>
-  </div>
+      <button id="toggleFixedMarkers" class="btn btn-outline-info nav-btn" title="Mostrar/Ocultar pontos fixos">📌</button>
+    </div>
 
     <!-- STATUS -->
     <div id="sectionStatus" class="section active">
@@ -309,59 +310,30 @@
       return [lat + Math.sin(rad)*r, lon + Math.cos(rad)*r];
     }
 
-// ===================== FIXED MARKERS =====================
-const marcacoesFixas = [
-  { nome: "Faz. Santa Angelica", lat: -3.5874843, lon: -47.3444003, description: "Faz Santa Angelica", tipo: "santaangelica" },
-  { nome: "Fertilizante", lat: -2.6828867, lon: -44.2810555, description: "Mosaic", tipo: "mosaic" },
-  { nome: "Sede", lat: -3.0229692, lon: -47.1094676, description: "Maria Julia", tipo: "mariajulia" },
-  { nome: "Calcario", lat: -6.3152594, lon: -48.5650847, description: "Calmap", tipo: "calmap" },
-  { nome: "Pingo de Ouro", lat: -3.8435993, lon: -47.7101285, description: "Pingo de Ouro", tipo: "pingodeouro" },
-  { nome: "Hidrovias", lat: -1.509747, lon: -48.7204514, description: "Hidrovias", tipo: "hidrovias" },
-  { nome: "EuroChem", lat: -1.5754797, lon: -48.7708808, description: "EuroChem", tipo: "eurochem" },
-  { nome: "Gees", lat: -2.580348, lon: -44.3519742, description: "Gees", tipo: "gees" },
-  { nome: "Posto Valen", lat: -2.6145971, lon: -44.3219929, description: "Triagem", tipo: "triagem" }
-];
+ // ===================== FIXED MARKERS (exemplos) =====================
+    // Você pode editar/adicionar marcacoesFixas com suas coordenadas reais
+    const marcacoesFixas = [
+      { nome: "Faz. Santa Angelica", lat: -3.5862890625277597, lon: -47.345423192202894, description: "Faz Santa Angelica" },
+      { nome: "Fertilizante", lat: -2.679965290615716, lon: -44.2806498758657, description: "Mosaic" },
+      { nome: "Sede", lat: -3.022706866171312, lon: -47.098478490620806, description: "Maria Julia" },
+      { nome: "Calcario", lat: -6.315990248847169, lon: -48.56346345509689, description: "Calmap" },
+    ];
 
-// Mapeia cada tipo para um ícone
-const iconesPorTipo = {
-  santaangelica: "santaangelica.png",
-  mosaic: "mosaic.png",
-  mariajulia: "mariajulia.png",
-  calmap: "calmap.png",
-  default: "default.png",
-  pingodeouro: "pingodeouro.png",
-  hidrovias: "hidrovias.png",
-  eurochem: "eurochem.png",
-  gees: "gees.png",
-  triagem: "triagem.png"
-};
+    function loadFixedMarkersOnMap(){
+      clearFixedMarkers();
+      for(const p of marcacoesFixas){
+        createFixedMarker(p.lat, p.lon, p.nome, { description: p.description });
+      }
+      fixedLayerGroup[ fixedMarkersVisible ? 'addTo' : 'removeFrom' ]?.(map);
+    }
 
-function createFixedMarker(lat, lon, nome, options, tipo){
-  const iconUrl = iconesPorTipo[tipo] || iconesPorTipo.default;
+    // toggle fixed markers
+    function toggleFixedMarkers(){
+      fixedMarkersVisible = !fixedMarkersVisible;
+      if(fixedMarkersVisible) fixedLayerGroup.addTo(map);
+      else map.removeLayer(fixedLayerGroup);
+    }
 
-  const icon = L.icon({
-    iconUrl: iconUrl,
-    iconSize: [32, 32],
-    iconAnchor: [16, 32],
-    popupAnchor: [0, -32]
-  });
-
-  const marker = L.marker([lat, lon], { icon: icon });
-
-  if(options.description){
-    marker.bindPopup(`<b>${nome}</b><br>${options.description}`);
-  }
-
-  fixedLayerGroup.addLayer(marker);
-}
-
-function loadFixedMarkersOnMap(){
-  clearFixedMarkers();
-  for(const p of marcacoesFixas){
-    createFixedMarker(p.lat, p.lon, p.nome, { description: p.description }, p.tipo);
-  }
-  fixedLayerGroup[ fixedMarkersVisible ? 'addTo' : 'removeFrom' ]?.(map);
-}
     // ===================== BUSCAR DADOS / STATUS =====================
     async function buscarDados(showLoading = true){
       initMap();
@@ -720,7 +692,7 @@ if (!hasCoords && posText) {
     const toggleFixedBtn = document.getElementById('toggleFixedMarkers');
 
     function setLegend(key){
-      if(key==='status') appLegend.innerText = "🚛 Status da Frota";
+      if(key==='status') appLegend.innerText = "🚛 Status da Frota — Região: Pará & Maranhão";
       if(key==='prod') appLegend.innerText = "📈 Painel de Produtividade";
       if(key==='volume') appLegend.innerText = "📊 Relatório de Volume Entregue";
     }
@@ -765,22 +737,6 @@ if (!hasCoords && posText) {
     window.souza_toggleFixedMarkers = toggleFixedMarkers;
 
   })();
-    // 💾 Exporta dados visíveis para CSV
-document.getElementById("Excel").addEventListener("click", () => {
-  const tabela = document.querySelector("table");
-  if (!tabela) return;
-  let csv = [];
-  tabela.querySelectorAll("tr").forEach(tr => {
-    let linha = [];
-    tr.querySelectorAll("th,td").forEach(td => linha.push(td.innerText));
-    csv.push(linha.join(","));
-  });
-  const blob = new Blob([csv.join("\n")], { type: "text/csv;charset=utf-8;" });
-  const link = document.createElement("a");
-  link.href = URL.createObjectURL(blob);
-  link.download = "dados_souza.csv";
-  link.click();
-});
   </script>
 </body>
 </html>
